@@ -42,7 +42,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         super().__init__(
             hass,
             _LOGGER,
-            name=entry.data.get(CONF_TITLE) or "SmartThings Vehicle",
+            name=entry.data.get(CONF_TITLE) or "스마트싱스 차량",
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL_SECONDS),
         )
 
@@ -73,7 +73,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
     def device_info(self) -> dict[str, Any]:
         return {
             "identifiers": {(DOMAIN, self.client.device_id)},
-            "name": self.config_entry.data.get(CONF_TITLE) or "SmartThings Vehicle",
+            "name": self.config_entry.data.get(CONF_TITLE) or "스마트싱스 차량",
             "manufacturer": "Hyundai Motor Group / SmartThings",
-            "model": "SmartThings vehicle",
+            "model": "한국 SmartThings 차량",
         }

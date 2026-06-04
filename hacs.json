@@ -1,5 +1,5 @@
 {
-  "name": "SmartThings Vehicle",
+  "name": "스마트싱스 차량",
   "render_readme": true,
   "homeassistant": "2024.12.0"
 }

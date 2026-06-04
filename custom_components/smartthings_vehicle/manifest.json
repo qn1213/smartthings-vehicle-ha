@@ -1,6 +1,6 @@
 {
   "domain": "smartthings_vehicle",
-  "name": "SmartThings Vehicle",
+  "name": "스마트싱스 차량",
   "codeowners": ["@gomeng-dev"],
   "config_flow": true,
   "dependencies": ["smartthings"],

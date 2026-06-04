@@ -24,7 +24,7 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str
     token = await _find_smartthings_token(hass)
     client = SmartThingsVehicleClient(async_get_clientsession(hass), token, data[CONF_DEVICE_ID])
     device = await client.async_get_device()
-    label = device.get("label") or data.get(CONF_TITLE) or "SmartThings Vehicle"
+    label = device.get("label") or data.get(CONF_TITLE) or "스마트싱스 차량"
     return {"title": str(label)}
 
 
@@ -60,7 +60,7 @@ class SmartThingsVehicleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_DEVICE_ID): str,
-                    vol.Optional(CONF_TITLE, default="SmartThings Vehicle"): str,
+                    vol.Optional(CONF_TITLE, default="스마트싱스 차량"): str,
                 }
             ),
             errors=errors,

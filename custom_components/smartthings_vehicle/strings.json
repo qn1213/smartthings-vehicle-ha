@@ -2,44 +2,44 @@
   "config": {
     "step": {
       "user": {
-        "title": "SmartThings Vehicle",
-        "description": "Uses the existing Home Assistant SmartThings integration OAuth token. Enter the SmartThings vehicle device ID.",
+        "title": "스마트싱스 차량",
+        "description": "Home Assistant 공식 SmartThings 통합의 OAuth 토큰을 재사용합니다. 한국 SmartThings에 등록된 현대자동차·기아·제네시스 차량의 SmartThings 장치 ID를 입력하세요.",
         "data": {
-          "device_id": "SmartThings vehicle device ID",
-          "title": "Vehicle name"
+          "device_id": "SmartThings 차량 장치 ID",
+          "title": "차량 이름"
         }
       }
     },
     "error": {
-      "cannot_connect": "Could not connect to SmartThings or no usable SmartThings OAuth token was found. Set up the official SmartThings integration first."
+      "cannot_connect": "SmartThings에 연결할 수 없거나 사용할 수 있는 SmartThings OAuth 토큰을 찾지 못했습니다. 먼저 Home Assistant 공식 SmartThings 통합을 설정하세요."
     },
     "abort": {
-      "already_configured": "This SmartThings vehicle is already configured."
+      "already_configured": "이 SmartThings 차량은 이미 설정되어 있습니다."
     }
   },
   "entity": {
     "sensor": {
-      "range_km": {"name": "Range"},
-      "odometer_km": {"name": "Odometer"},
-      "engine_state": {"name": "Engine"},
-      "hvac_state": {"name": "HVAC"},
-      "cabin_temperature": {"name": "Cabin temperature"},
-      "lock_state": {"name": "Lock state"},
-      "front_left_door": {"name": "Front left door"},
-      "front_right_door": {"name": "Front right door"},
-      "rear_left_door": {"name": "Rear left door"},
-      "rear_right_door": {"name": "Rear right door"},
-      "front_left_window": {"name": "Front left window"},
-      "front_right_window": {"name": "Front right window"},
-      "rear_left_window": {"name": "Rear left window"},
-      "rear_right_window": {"name": "Rear right window"},
-      "fuel_warning": {"name": "Fuel warning"},
-      "smart_key_battery": {"name": "Smart key battery"},
-      "health": {"name": "Health"}
+      "range_km": {"name": "주행 가능 거리"},
+      "odometer_km": {"name": "누적 주행 거리"},
+      "engine_state": {"name": "시동 상태"},
+      "hvac_state": {"name": "공조 상태"},
+      "cabin_temperature": {"name": "실내 온도"},
+      "lock_state": {"name": "잠금 상태"},
+      "front_left_door": {"name": "운전석 도어"},
+      "front_right_door": {"name": "조수석 도어"},
+      "rear_left_door": {"name": "뒤 좌측 도어"},
+      "rear_right_door": {"name": "뒤 우측 도어"},
+      "front_left_window": {"name": "운전석 창문"},
+      "front_right_window": {"name": "조수석 창문"},
+      "rear_left_window": {"name": "뒤 좌측 창문"},
+      "rear_right_window": {"name": "뒤 우측 창문"},
+      "fuel_warning": {"name": "연료 경고"},
+      "smart_key_battery": {"name": "스마트키 배터리"},
+      "health": {"name": "연결 상태"}
     },
     "button": {
-      "refresh": {"name": "Refresh vehicle status"},
-      "lock_vehicle": {"name": "Lock vehicle"}
+      "refresh": {"name": "차량 상태 새로고침"},
+      "lock_vehicle": {"name": "차량 잠금"}
     }
   }
 }
