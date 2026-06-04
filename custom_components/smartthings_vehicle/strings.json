@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SmartThings Vehicle",
+        "description": "Uses the existing Home Assistant SmartThings integration OAuth token. Enter the SmartThings vehicle device ID.",
+        "data": {
+          "device_id": "SmartThings vehicle device ID",
+          "title": "Vehicle name"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to SmartThings or no usable SmartThings OAuth token was found. Set up the official SmartThings integration first."
+    },
+    "abort": {
+      "already_configured": "This SmartThings vehicle is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "range_km": {"name": "Range"},
+      "odometer_km": {"name": "Odometer"},
+      "engine_state": {"name": "Engine"},
+      "hvac_state": {"name": "HVAC"},
+      "cabin_temperature": {"name": "Cabin temperature"},
+      "lock_state": {"name": "Lock state"},
+      "front_left_door": {"name": "Front left door"},
+      "front_right_door": {"name": "Front right door"},
+      "rear_left_door": {"name": "Rear left door"},
+      "rear_right_door": {"name": "Rear right door"},
+      "front_left_window": {"name": "Front left window"},
+      "front_right_window": {"name": "Front right window"},
+      "rear_left_window": {"name": "Rear left window"},
+      "rear_right_window": {"name": "Rear right window"},
+      "fuel_warning": {"name": "Fuel warning"},
+      "smart_key_battery": {"name": "Smart key battery"},
+      "health": {"name": "Health"}
+    },
+    "button": {
+      "refresh": {"name": "Refresh vehicle status"},
+      "lock_vehicle": {"name": "Lock vehicle"}
+    }
+  }
+}

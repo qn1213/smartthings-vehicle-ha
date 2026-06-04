@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+API_BASE_URL = "https://api.smartthings.com/v1"
+
+
+class SmartThingsApiError(RuntimeError):
+    """Raised when SmartThings vehicle API data or commands are invalid."""
+
+
+@dataclass(frozen=True, slots=True)
+class VehicleStatus:
+    range_km: float | int | None = None
+    odometer_km: float | int | None = None
+    engine_state: str | None = None
+    hvac_state: str | None = None
+    cabin_temperature: float | int | None = None
+    cabin_temperature_unit: str | None = None
+    lock_state: str | None = None
+    front_left_door: str | None = None
+    front_right_door: str | None = None
+    rear_left_door: str | None = None
+    rear_right_door: str | None = None
+    front_left_window: str | None = None
+    front_right_window: str | None = None
+    rear_left_window: str | None = None
+    rear_right_window: str | None = None
+    fuel_warning: str | None = None
+    smart_key_battery: str | None = None
+    health: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            field: getattr(self, field)
+            for field in self.__dataclass_fields__
+            if getattr(self, field) is not None
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class VehicleCommandResult:
+    accepted: bool
+    command_id: str | None
+    raw: dict[str, Any]
+
+
+def _nested_value(payload: dict[str, Any], capability: str, attribute: str) -> Any:
+    main = payload.get("components", {}).get("main", {})
+    return main.get(capability, {}).get(attribute, {}).get("value")
+
+
+def _nested_unit(payload: dict[str, Any], capability: str, attribute: str) -> str | None:
+    main = payload.get("components", {}).get("main", {})
+    unit = main.get(capability, {}).get(attribute, {}).get("unit")
+    return unit if isinstance(unit, str) else None
+
+
+def extract_access_token(data: dict[str, Any]) -> str:
+    """Extract a SmartThings OAuth access token from HA config-entry-like data."""
+
+    direct = data.get("access_token") or data.get("accessToken")
+    if isinstance(direct, str) and direct:
+        return direct
+
+    for value in data.values():
+        if isinstance(value, dict):
+            token = value.get("access_token") or value.get("accessToken")
+            if isinstance(token, str) and token:
+                return token
+
+    raise SmartThingsApiError("SmartThings access token was not found")
+
+
+def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
+    """Map SmartThings `/status` JSON into a stable vehicle status dataclass."""
+
+    return VehicleStatus(
+        range_km=_nested_value(payload, "vehicleRange", "estimatedRemainingRange"),
+        odometer_km=_nested_value(payload, "vehicleOdometer", "odometerReading"),
+        engine_state=_nested_value(payload, "vehicleEngine", "engineState"),
+        hvac_state=_nested_value(payload, "vehicleHvac", "hvacState"),
+        cabin_temperature=_nested_value(payload, "vehicleHvac", "temperature"),
+        cabin_temperature_unit=_nested_unit(payload, "vehicleHvac", "temperature"),
+        lock_state=_nested_value(payload, "vehicleDoorState", "lockState"),
+        front_left_door=_nested_value(payload, "vehicleDoorState", "frontLeftDoor"),
+        front_right_door=_nested_value(payload, "vehicleDoorState", "frontRightDoor"),
+        rear_left_door=_nested_value(payload, "vehicleDoorState", "rearLeftDoor"),
+        rear_right_door=_nested_value(payload, "vehicleDoorState", "rearRightDoor"),
+        front_left_window=_nested_value(payload, "vehicleWindowState", "frontLeftWindow"),
+        front_right_window=_nested_value(payload, "vehicleWindowState", "frontRightWindow"),
+        rear_left_window=_nested_value(payload, "vehicleWindowState", "rearLeftWindow"),
+        rear_right_window=_nested_value(payload, "vehicleWindowState", "rearRightWindow"),
+        fuel_warning=_nested_value(payload, "vehicleWarning", "fuel"),
+        smart_key_battery=_nested_value(payload, "vehicleWarning", "smartKeyBattery"),
+        health=_nested_value(payload, "healthCheck", "DeviceWatch-DeviceStatus"),
+    )
+
+
+def parse_command_result(payload: dict[str, Any]) -> VehicleCommandResult:
+    results = payload.get("results")
+    if not isinstance(results, list) or not results:
+        raise SmartThingsApiError("SmartThings command response had no results")
+
+    first = results[0] or {}
+    status = first.get("status")
+    command_id = first.get("id")
+    if status != "ACCEPTED":
+        raise SmartThingsApiError(f"SmartThings command was not accepted: {status!r}")
+
+    return VehicleCommandResult(accepted=True, command_id=command_id, raw=payload)
+
+
+class SmartThingsVehicleClient:
+    """Tiny async client for the SmartThings vehicle REST endpoints."""
+
+    def __init__(self, session: Any, access_token: str, device_id: str) -> None:
+        self._session = session
+        self._access_token = access_token
+        self.device_id = device_id
+
+    @property
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self._access_token}",
+            "Accept": "application/json",
+        }
+
+    async def async_get_device(self) -> dict[str, Any]:
+        return await self._request("GET", f"/devices/{self.device_id}")
+
+    async def async_get_status(self) -> VehicleStatus:
+        payload = await self._request("GET", f"/devices/{self.device_id}/status")
+        return parse_vehicle_status(payload)
+
+    async def async_refresh(self) -> VehicleCommandResult:
+        return await self.async_send_command("refresh", "refresh")
+
+    async def async_lock(self) -> VehicleCommandResult:
+        return await self.async_send_command("vehicleDoorState", "lock")
+
+    async def async_send_command(self, capability: str, command: str) -> VehicleCommandResult:
+        payload = {
+            "commands": [
+                {
+                    "component": "main",
+                    "capability": capability,
+                    "command": command,
+                    "arguments": [],
+                }
+            ]
+        }
+        result = await self._request("POST", f"/devices/{self.device_id}/commands", json=payload)
+        return parse_command_result(result)
+
+    async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        headers = kwargs.pop("headers", {})
+        headers = {**self._headers, **headers}
+        if method == "POST":
+            headers.setdefault("Content-Type", "application/json")
+
+        async with self._session.request(
+            method,
+            f"{API_BASE_URL}{path}",
+            headers=headers,
+            **kwargs,
+        ) as response:
+            if response.status >= 400:
+                text = await response.text()
+                raise SmartThingsApiError(f"SmartThings HTTP {response.status}: {text[:500]}")
+            return await response.json()
