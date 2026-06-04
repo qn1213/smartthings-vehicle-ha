@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .const import build_entity_id
 from .coordinator import SmartThingsVehicleCoordinator
 from .vehicle import VehicleStatus
 
@@ -138,6 +139,7 @@ class SmartThingsVehicleSensor(CoordinatorEntity[SmartThingsVehicleCoordinator],
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.client.device_id}_{description.key}"
+        self.entity_id = build_entity_id("sensor", description.key)
         self._attr_device_info = coordinator.device_info
 
     @property
