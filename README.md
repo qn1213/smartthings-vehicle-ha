@@ -6,12 +6,13 @@
 
 ## 현재 상태
 
-초기 개발 버전입니다.
+초기 공개 배포 준비 버전입니다.
 
 검증된 흐름:
 
 - Home Assistant 공식 SmartThings 통합의 OAuth 토큰 재사용
 - SmartThings REST API 차량 상태 조회
+- SmartThings 차량 자동 탐색 기반 설정 화면
 - `쏘나타` 차량에서 도어 잠금/해제 명령의 실제 상태 변화 확인
 - Home Assistant Core macOS 환경에서 모듈 import 확인
 - GitHub Actions CI 통과
@@ -72,9 +73,25 @@ SmartThings REST API가 이 차량에서 명령으로 노출한 제어 기능:
 
 이 커스텀 통합은 위 공식 통합의 OAuth 토큰을 재사용합니다.
 
+## HACS 설치
+
+공개 저장소 배포 기준의 권장 설치 방법입니다.
+
+1. Home Assistant에 [HACS](https://hacs.xyz/)를 설치하고 GitHub 인증을 완료합니다.
+2. HACS → 통합 → 우측 상단 메뉴 → 사용자 정의 저장소를 엽니다.
+3. 저장소 URL에 아래 주소를 입력합니다.
+
+   ```text
+   https://github.com/gomeng-dev/smartthings-vehicle-ha
+   ```
+
+4. 카테고리는 `Integration`을 선택합니다.
+5. `스마트싱스 차량`을 다운로드합니다.
+6. Home Assistant를 재시작합니다.
+
 ## 수동 설치
 
-아직 정식 HACS 배포 전이라면 다음처럼 설치할 수 있습니다.
+HACS를 쓰지 않는 경우 다음처럼 설치할 수 있습니다.
 
 ```bash
 cd ~/.homeassistant
@@ -88,15 +105,31 @@ cp -R /path/to/smartthings-vehicle-ha/custom_components/smartthings_vehicle cust
 launchctl kickstart -k gui/$(id -u)/com.homeassistant.core
 ```
 
-## 설정
+## 최초 설정 / 온보딩
 
 Home Assistant 재시작 후:
 
 1. 설정 → 기기 및 서비스
 2. 통합 추가
 3. `스마트싱스 차량` 검색
-4. SmartThings 차량 장치 ID 입력
-5. 차량 이름 입력
+4. 자동 탐색된 차량 목록에서 차량 선택
+5. 차량 이름 확인 또는 수정
+6. 설정 완료
+
+설정 화면은 Home Assistant 공식 SmartThings 통합의 OAuth 토큰을 사용해 SmartThings `/devices` 목록을 조회하고, `vehicle*` capability가 있는 장치를 차량 후보로 보여줍니다.
+
+자동 탐색에 실패하거나 차량 후보가 없으면 `SmartThings 차량` 입력칸에 SmartThings 차량 장치 ID를 직접 입력할 수 있습니다.
+
+설정 완료 후에는 고위험 제어를 포함한 모든 차량 제어 엔티티가 생성됩니다.
+
+- 차량 상태 새로고침
+- 차량 연결 확인
+- 차량 잠금
+- 차량 잠금 해제
+- 원격 시동 켜기 / 끄기
+- 공조 켜기 / 끄기
+
+잠금 해제, 원격 시동, 공조 제어는 실제 차량 상태를 바꾸는 동작입니다. 이 통합은 설치/검증 과정에서 이런 명령을 자동 실행하지 않지만, 생성된 버튼을 누르거나 자동화에 넣으면 실제 명령이 전송됩니다.
 
 현재 검증에 사용한 SmartThings 차량 장치 ID는 개발 환경에서만 사용하며, README에는 실제 ID를 공개하지 않습니다.
 

@@ -28,6 +28,30 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str
     return {"title": str(label)}
 
 
+async def _vehicle_options(hass: HomeAssistant) -> dict[str, str]:
+    token = await _find_smartthings_token(hass)
+    client = SmartThingsVehicleClient(async_get_clientsession(hass), token, "")
+    vehicles = await client.async_list_devices()
+    options: dict[str, str] = {}
+    for vehicle in vehicles:
+        device_id = vehicle.get(CONF_DEVICE_ID)
+        if not isinstance(device_id, str) or not device_id:
+            continue
+        label = vehicle.get("label") or device_id
+        options[device_id] = f"{label} (…{device_id[-6:]})"
+    return options
+
+
+def _schema(vehicle_options: dict[str, str]) -> vol.Schema:
+    device_field = vol.In(vehicle_options) if vehicle_options else str
+    return vol.Schema(
+        {
+            vol.Required(CONF_DEVICE_ID): device_field,
+            vol.Optional(CONF_TITLE, default="스마트싱스 차량"): str,
+        }
+    )
+
+
 class SmartThingsVehicleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for SmartThings Vehicle."""
 
@@ -55,13 +79,15 @@ class SmartThingsVehicleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        vehicle_options: dict[str, str] = {}
+        if user_input is None:
+            try:
+                vehicle_options = await _vehicle_options(self.hass)
+            except SmartThingsApiError:
+                errors["base"] = "cannot_connect"
+
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_DEVICE_ID): str,
-                    vol.Optional(CONF_TITLE, default="스마트싱스 차량"): str,
-                }
-            ),
+            data_schema=_schema(vehicle_options),
             errors=errors,
         )

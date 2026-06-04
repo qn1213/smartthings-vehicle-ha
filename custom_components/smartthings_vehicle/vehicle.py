@@ -46,6 +46,20 @@ class VehicleCommandResult:
     raw: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class VehicleDevice:
+    device_id: str
+    label: str
+    manufacturer: str | None = None
+
+    def as_dict(self) -> dict[str, str | None]:
+        return {
+            "device_id": self.device_id,
+            "label": self.label,
+            "manufacturer": self.manufacturer,
+        }
+
+
 def _nested_value(payload: dict[str, Any], capability: str, attribute: str) -> Any:
     main = payload.get("components", {}).get("main", {})
     return main.get(capability, {}).get(attribute, {}).get("value")
@@ -71,6 +85,52 @@ def extract_access_token(data: dict[str, Any]) -> str:
                 return token
 
     raise SmartThingsApiError("SmartThings access token was not found")
+
+
+def _device_has_vehicle_capability(device: dict[str, Any]) -> bool:
+    components = device.get("components")
+    if not isinstance(components, list):
+        return False
+
+    for component in components:
+        capabilities = component.get("capabilities") if isinstance(component, dict) else None
+        if not isinstance(capabilities, list):
+            continue
+        for capability in capabilities:
+            if isinstance(capability, dict):
+                capability_id = capability.get("id")
+            else:
+                capability_id = capability
+            if isinstance(capability_id, str) and capability_id.startswith("vehicle"):
+                return True
+    return False
+
+
+def discover_vehicle_devices(payload: dict[str, Any]) -> list[dict[str, str | None]]:
+    """Return SmartThings devices that look like Hyundai/Kia/Genesis vehicle devices."""
+
+    items = payload.get("items")
+    if not isinstance(items, list):
+        return []
+
+    vehicles: list[VehicleDevice] = []
+    for device in items:
+        if not isinstance(device, dict) or not _device_has_vehicle_capability(device):
+            continue
+        device_id = device.get("deviceId") or device.get("device_id")
+        if not isinstance(device_id, str) or not device_id:
+            continue
+        label = device.get("label") or device.get("name") or device_id
+        manufacturer = device.get("manufacturerName") or device.get("manufacturer")
+        vehicles.append(
+            VehicleDevice(
+                device_id=device_id,
+                label=str(label),
+                manufacturer=str(manufacturer) if manufacturer is not None else None,
+            )
+        )
+
+    return [vehicle.as_dict() for vehicle in vehicles]
 
 
 def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
@@ -126,6 +186,10 @@ class SmartThingsVehicleClient:
             "Authorization": f"Bearer {self._access_token}",
             "Accept": "application/json",
         }
+
+    async def async_list_devices(self) -> list[dict[str, str | None]]:
+        payload = await self._request("GET", "/devices")
+        return discover_vehicle_devices(payload)
 
     async def async_get_device(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}")
