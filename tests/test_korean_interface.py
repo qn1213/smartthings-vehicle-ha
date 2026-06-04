@@ -24,9 +24,15 @@ def test_home_assistant_visible_strings_are_korean_first():
             encoding="utf-8"
         )
     )
+    ko = json.loads(
+        (ROOT / "custom_components/smartthings_vehicle/translations/ko.json").read_text(
+            encoding="utf-8"
+        )
+    )
 
     assert manifest["name"] == "스마트싱스 차량"
     assert hacs["name"] == "스마트싱스 차량"
     assert strings["config"]["step"]["user"]["title"] == "스마트싱스 차량"
     assert strings["entity"]["sensor"]["range_km"]["name"] == "주행 가능 거리"
     assert strings["entity"]["button"]["lock_vehicle"]["name"] == "차량 잠금"
+    assert ko == strings
