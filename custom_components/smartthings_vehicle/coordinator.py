@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from datetime import timedelta
 from typing import Any, Protocol
 
@@ -70,16 +71,20 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     async def async_lock_vehicle(self) -> None:
         await self.client.async_lock()
+        self._assume_status(lock_state="locked")
         await self._async_wait_for_status(
             lambda status: status.lock_state == "locked",
             "lock_state=locked",
+            publish_intermediate_statuses=False,
         )
 
     async def async_unlock_vehicle(self) -> None:
         await self.client.async_unlock()
+        self._assume_status(lock_state="unlocked")
         await self._async_wait_for_status(
             lambda status: status.lock_state == "unlocked",
             "lock_state=unlocked",
+            publish_intermediate_statuses=False,
         )
 
     async def async_start_engine(self) -> None:
@@ -92,16 +97,20 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     async def async_turn_hvac_on(self) -> None:
         await self.client.async_turn_hvac_on(**self.hvac_settings.as_command_kwargs())
+        self._assume_status(hvac_state="on")
         await self._async_wait_for_status(
             lambda status: status.hvac_state in _ON_STATES,
             "hvac_state=on",
+            publish_intermediate_statuses=False,
         )
 
     async def async_turn_hvac_off(self) -> None:
         await self.client.async_turn_hvac_off()
+        self._assume_status(hvac_state="off")
         await self._async_wait_for_status(
             lambda status: status.hvac_state in _OFF_STATES,
             "hvac_state=off",
+            publish_intermediate_statuses=False,
         )
 
     @property
@@ -123,13 +132,18 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         *,
         timeout_seconds: int = _COMMAND_CONVERGENCE_TIMEOUT_SECONDS,
         poll_seconds: int = _COMMAND_CONVERGENCE_POLL_SECONDS,
+        publish_intermediate_statuses: bool = True,
     ) -> None:
         """Poll SmartThings status until an accepted vehicle command settles."""
+
+        def update_status(status: VehicleStatus) -> None:
+            if publish_intermediate_statuses or predicate(status):
+                self.async_set_updated_data(status)
 
         result = await async_wait_for_vehicle_status(
             self.client.async_get_status,
             predicate,
-            self.async_set_updated_data,
+            update_status,
             timeout_seconds=timeout_seconds,
             poll_seconds=poll_seconds,
         )
@@ -143,6 +157,11 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
             timeout_seconds,
             f"; last status error: {result.last_error}" if result.last_error else "",
         )
+
+    def _assume_status(self, **updates: str) -> None:
+        """Immediately publish a command target state, then reconcile by polling."""
+
+        self.async_set_updated_data(replace(self.data or VehicleStatus(), **updates))
 
     def set_hvac_temperature(self, temperature: float | int) -> None:
         self.hvac_settings = self.hvac_settings.with_temperature(temperature)

@@ -44,5 +44,5 @@ def test_home_assistant_visible_strings_are_korean_first():
     assert strings["entity"]["switch"]["hvac_defog"]["name"] == "앞유리 김서림 제거"
     assert set(strings["entity"]["select"]) == {"hvac_defog", "hvac_ignition_duration"}
     assert strings["entity"]["select"]["hvac_ignition_duration"]["name"] == "공조 작동 시간"
-    assert strings["entity"]["climate"]["hvac_climate"]["name"] == "공조 온도 조절"
+    assert strings["entity"]["climate"]["hvac_climate"]["name"] == "에어컨"
     assert ko == strings

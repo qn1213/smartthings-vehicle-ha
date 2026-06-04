@@ -15,7 +15,7 @@ Home Assistant 공식 SmartThings 통합의 OAuth 인증을 재사용하므로, 
 - 차량 상태 새로고침 및 연결 확인
 - 차량 잠금 / 잠금 해제는 잠금 엔티티로 제어
 - SmartThings 앱처럼 원격 시동은 별도 스위치로 노출하지 않고 공조 켜기 / 끄기 스위치로 함께 관리
-- Google Assistant에서 다루기 쉬운 공조 온도 조절 엔티티 제공
+- Google Assistant에서 에어컨처럼 다루기 쉬운 냉방 모드 climate 엔티티 제공
 - 공조 온도, 작동 시간, 앞유리 김서림 제거 설정
 
 ## 지원 환경
@@ -93,9 +93,9 @@ Home Assistant를 재시작한 뒤 통합을 추가합니다.
 - 공조: 켜기 / 끄기. 켜기 명령에는 설정된 작동 시간이 포함되어 SmartThings 차량 원격 공조처럼 시동과 공조가 함께 동작합니다.
 - 앞유리 김서림 제거: 켜기 / 끄기. 이 값은 다음 공조 켜기 명령에 함께 전송됩니다.
 
-### 온도 조절
+### 에어컨
 
-- 공조 온도 조절: Google Assistant에서 온도 설정과 공조 켜기 / 끄기를 자연스럽게 제어하기 위한 climate 엔티티입니다.
+- 에어컨: Google Assistant에서 온도 설정과 공조 켜기 / 끄기를 자연스럽게 제어하기 위한 냉방 모드 climate 엔티티입니다.
 
 ### 공조 설정
 
@@ -105,7 +105,7 @@ Home Assistant를 재시작한 뒤 통합을 추가합니다.
 
 `공조` 스위치를 켜면 현재 설정된 공조 값과 작동 시간이 SmartThings로 전송됩니다. 온도나 작동 시간을 바꾸는 것만으로는 차량 명령이 실행되지 않습니다.
 
-Google Assistant에 노출할 때는 `climate.smartthings_vehicle_hvac`, `switch.smartthings_vehicle_hvac`, `switch.smartthings_vehicle_hvac_defog`, `select.smartthings_vehicle_hvac_ignition_duration`를 함께 노출하면 음성으로 공조 켜기/끄기, 온도 설정, 김서림 제거 설정, 작동 시간 설정을 다루기 쉽습니다.
+Google Assistant에는 `climate.smartthings_vehicle_hvac`를 `쏘나타 에어컨`으로 노출하는 것을 권장합니다. 추가 옵션으로 `switch.smartthings_vehicle_hvac_defog`, `select.smartthings_vehicle_hvac_ignition_duration`를 함께 노출하면 음성으로 온도 설정, 에어컨 켜기/끄기, 김서림 제거 설정, 작동 시간 설정을 다루기 쉽습니다.
 
 ## 안전 안내
 
@@ -137,7 +137,7 @@ Google Assistant에 노출할 때는 `climate.smartthings_vehicle_hvac`, `switch
 
 ### 버튼/토글을 눌러도 차량 상태가 바로 바뀌지 않음
 
-SmartThings 차량 명령은 네트워크, 차량 통신 상태, 제조사 서버 상태에 따라 반영까지 시간이 걸릴 수 있습니다. 이 통합은 잠금/공조 명령이 `ACCEPTED` 된 뒤 최대 약 24초 동안 실제 상태 수렴을 확인하지만, 차량 상태 반영이 더 늦으면 잠시 기다린 뒤 `차량 상태 새로고침`을 눌러 확인하세요.
+SmartThings 차량 명령은 네트워크, 차량 통신 상태, 제조사 서버 상태에 따라 반영까지 시간이 걸릴 수 있습니다. 이 통합은 잠금/공조 명령이 `ACCEPTED` 되면 Home Assistant 상태를 목표 상태로 즉시 반영한 뒤 최대 약 24초 동안 실제 상태 수렴을 확인합니다. 차량 상태 반영이 더 늦으면 잠시 기다린 뒤 `차량 상태 새로고침`을 눌러 확인하세요.
 
 ## 수동 설치
 

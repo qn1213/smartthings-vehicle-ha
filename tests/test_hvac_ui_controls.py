@@ -116,6 +116,9 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     assert "_DURATION_OPTIONS" in select_source
     assert "ClimateEntity" in climate_source
     assert "ClimateEntityFeature.TARGET_TEMPERATURE" in climate_source
+    assert "HVACMode.COOL" in climate_source
     assert "async_set_temperature" in climate_source
     assert "self.hvac_settings.as_command_kwargs()" in coordinator_source
     assert "_async_wait_for_status" in coordinator_source
+    assert "_assume_status" in coordinator_source
+    assert "publish_intermediate_statuses=False" in coordinator_source

@@ -114,7 +114,7 @@
     },
     "climate": {
       "hvac_climate": {
-        "name": "공조 온도 조절"
+        "name": "에어컨"
       }
     }
   }

@@ -41,7 +41,7 @@ class SmartThingsVehicleClimate(
     _attr_target_temperature_step = HVAC_TEMPERATURE_STEP
     _attr_min_temp = HVAC_TEMPERATURE_MIN
     _attr_max_temp = HVAC_TEMPERATURE_MAX
-    _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT_COOL]
+    _attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL]
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.TURN_ON
@@ -71,7 +71,7 @@ class SmartThingsVehicleClimate(
     @property
     def hvac_mode(self) -> HVACMode:
         if self.coordinator.is_hvac_on:
-            return HVACMode.HEAT_COOL
+            return HVACMode.COOL
         return HVACMode.OFF
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
