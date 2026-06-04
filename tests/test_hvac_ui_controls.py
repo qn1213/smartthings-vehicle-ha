@@ -46,8 +46,8 @@ def test_hvac_settings_reject_unsupported_ui_values(change, value):
         getattr(HvacSettings(), change)(value)
 
 
-def test_home_assistant_platforms_include_hvac_number_and_select_entities():
-    assert PLATFORMS == ["sensor", "button", "number", "select"]
+def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities():
+    assert PLATFORMS == ["sensor", "button", "lock", "switch", "number", "select"]
 
     assert build_entity_id("number", "hvac_temperature") == (
         "number.smartthings_vehicle_hvac_temperature"
@@ -56,7 +56,19 @@ def test_home_assistant_platforms_include_hvac_number_and_select_entities():
         "number.smartthings_vehicle_hvac_ignition_duration"
     )
     assert build_entity_id("select", "hvac_defog") == "select.smartthings_vehicle_hvac_defog"
+    assert build_entity_id("lock", "door_lock") == "lock.smartthings_vehicle_door_lock"
+    assert build_entity_id("switch", "engine") == "switch.smartthings_vehicle_engine"
+    assert build_entity_id("switch", "hvac") == "switch.smartthings_vehicle_hvac"
 
+    button_source = (ROOT / "custom_components/smartthings_vehicle/button.py").read_text(
+        encoding="utf-8"
+    )
+    lock_source = (ROOT / "custom_components/smartthings_vehicle/lock.py").read_text(
+        encoding="utf-8"
+    )
+    switch_source = (ROOT / "custom_components/smartthings_vehicle/switch.py").read_text(
+        encoding="utf-8"
+    )
     number_source = (ROOT / "custom_components/smartthings_vehicle/number.py").read_text(
         encoding="utf-8"
     )
@@ -67,6 +79,17 @@ def test_home_assistant_platforms_include_hvac_number_and_select_entities():
         ROOT / "custom_components/smartthings_vehicle/coordinator.py"
     ).read_text(encoding="utf-8")
 
+    assert "lock_vehicle" not in button_source
+    assert "unlock_vehicle" not in button_source
+    assert "start_engine" not in button_source
+    assert "stop_engine" not in button_source
+    assert "turn_hvac_on" not in button_source
+    assert "turn_hvac_off" not in button_source
+    assert "LockEntity" in lock_source
+    assert "SwitchEntity" in switch_source
+    assert "door_lock" in lock_source
+    assert "engine" in switch_source
+    assert "hvac" in switch_source
     assert "NumberEntity" in number_source
     assert "hvac_temperature" in number_source
     assert "hvac_ignition_duration" in number_source

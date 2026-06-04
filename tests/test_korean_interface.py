@@ -37,10 +37,8 @@ def test_home_assistant_visible_strings_are_korean_first():
     assert hacs["name"] == "스마트싱스 차량"
     assert strings["config"]["step"]["user"]["title"] == "스마트싱스 차량"
     assert strings["entity"]["sensor"]["range_km"]["name"] == "주행 가능 거리"
-    assert strings["entity"]["button"]["lock_vehicle"]["name"] == "차량 잠금"
-    assert strings["entity"]["button"]["unlock_vehicle"]["name"] == "차량 잠금 해제"
-    assert strings["entity"]["button"]["start_engine"]["name"] == "원격 시동 켜기"
-    assert strings["entity"]["button"]["stop_engine"]["name"] == "원격 시동 끄기"
-    assert strings["entity"]["button"]["turn_hvac_on"]["name"] == "공조 켜기"
-    assert strings["entity"]["button"]["turn_hvac_off"]["name"] == "공조 끄기"
+    assert set(strings["entity"]["button"]) == {"refresh", "ping_vehicle"}
+    assert strings["entity"]["lock"]["door_lock"]["name"] == "차량 잠금"
+    assert strings["entity"]["switch"]["engine"]["name"] == "원격 시동"
+    assert strings["entity"]["switch"]["hvac"]["name"] == "공조"
     assert ko == strings

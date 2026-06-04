@@ -29,36 +29,6 @@ BUTTONS = (
         translation_key="ping_vehicle",
         press_fn=lambda coordinator: coordinator.async_ping_vehicle(),
     ),
-    SmartThingsVehicleButtonDescription(
-        key="lock_vehicle",
-        translation_key="lock_vehicle",
-        press_fn=lambda coordinator: coordinator.async_lock_vehicle(),
-    ),
-    SmartThingsVehicleButtonDescription(
-        key="unlock_vehicle",
-        translation_key="unlock_vehicle",
-        press_fn=lambda coordinator: coordinator.async_unlock_vehicle(),
-    ),
-    SmartThingsVehicleButtonDescription(
-        key="start_engine",
-        translation_key="start_engine",
-        press_fn=lambda coordinator: coordinator.async_start_engine(),
-    ),
-    SmartThingsVehicleButtonDescription(
-        key="stop_engine",
-        translation_key="stop_engine",
-        press_fn=lambda coordinator: coordinator.async_stop_engine(),
-    ),
-    SmartThingsVehicleButtonDescription(
-        key="turn_hvac_on",
-        translation_key="turn_hvac_on",
-        press_fn=lambda coordinator: coordinator.async_turn_hvac_on(),
-    ),
-    SmartThingsVehicleButtonDescription(
-        key="turn_hvac_off",
-        translation_key="turn_hvac_off",
-        press_fn=lambda coordinator: coordinator.async_turn_hvac_off(),
-    ),
 )
 
 
