@@ -4,12 +4,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_readme_declares_korea_only_design():
+def test_readme_is_distribution_focused_and_korean_first():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "한국 사용 환경 전용" in readme
-    assert "한국어 우선" in readme
     assert "현대자동차·기아·제네시스" in readme
+    assert "## HACS 설치" in readme
+    assert "## 최초 설정" in readme
+    assert "## 주요 기능" in readme
+    assert "## 개발" not in readme
+    assert "설계 원칙" not in readme
 
 
 def test_home_assistant_visible_strings_are_korean_first():
