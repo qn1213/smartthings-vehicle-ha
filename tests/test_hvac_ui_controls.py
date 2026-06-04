@@ -57,7 +57,6 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     )
     assert build_entity_id("select", "hvac_defog") == "select.smartthings_vehicle_hvac_defog"
     assert build_entity_id("lock", "door_lock") == "lock.smartthings_vehicle_door_lock"
-    assert build_entity_id("switch", "engine") == "switch.smartthings_vehicle_engine"
     assert build_entity_id("switch", "hvac") == "switch.smartthings_vehicle_hvac"
 
     button_source = (ROOT / "custom_components/smartthings_vehicle/button.py").read_text(
@@ -88,7 +87,9 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     assert "LockEntity" in lock_source
     assert "SwitchEntity" in switch_source
     assert "door_lock" in lock_source
-    assert "engine" in switch_source
+    assert "key=\"engine\"" not in switch_source
+    assert "async_start_engine" not in switch_source
+    assert "async_stop_engine" not in switch_source
     assert "hvac" in switch_source
     assert "NumberEntity" in number_source
     assert "hvac_temperature" in number_source

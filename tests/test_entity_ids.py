@@ -9,7 +9,6 @@ def test_vehicle_entity_ids_are_generic_and_do_not_include_vehicle_name():
     assert build_entity_id("sensor", "range_km") == "sensor.smartthings_vehicle_range_km"
     assert build_entity_id("sensor", "lock_state") == "sensor.smartthings_vehicle_lock_state"
     assert build_entity_id("lock", "door_lock") == "lock.smartthings_vehicle_door_lock"
-    assert build_entity_id("switch", "engine") == "switch.smartthings_vehicle_engine"
     assert build_entity_id("switch", "hvac") == "switch.smartthings_vehicle_hvac"
 
     for vehicle_name in ("쏘나타", "아이오닉", "ev6", "genesis"):

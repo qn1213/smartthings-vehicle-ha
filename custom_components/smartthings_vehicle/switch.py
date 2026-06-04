@@ -35,13 +35,6 @@ class SmartThingsVehicleSwitchDescription(SwitchEntityDescription):
 
 SWITCHES: tuple[SmartThingsVehicleSwitchDescription, ...] = (
     SmartThingsVehicleSwitchDescription(
-        key="engine",
-        translation_key="engine",
-        value_fn=lambda status: _state_to_switch_value(status.engine_state),
-        turn_on_fn=lambda coordinator: coordinator.async_start_engine(),
-        turn_off_fn=lambda coordinator: coordinator.async_stop_engine(),
-    ),
-    SmartThingsVehicleSwitchDescription(
         key="hvac",
         translation_key="hvac",
         value_fn=lambda status: _state_to_switch_value(status.hvac_state),
