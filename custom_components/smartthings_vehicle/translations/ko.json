@@ -96,6 +96,19 @@
       "turn_hvac_off": {
         "name": "공조 끄기"
       }
+    },
+    "number": {
+      "hvac_temperature": {
+        "name": "공조 설정 온도"
+      },
+      "hvac_ignition_duration": {
+        "name": "공조 작동 시간"
+      }
+    },
+    "select": {
+      "hvac_defog": {
+        "name": "앞유리 김서림 제거"
+      }
     }
   }
 }

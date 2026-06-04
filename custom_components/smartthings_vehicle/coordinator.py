@@ -16,6 +16,7 @@ from .const import (
     DOMAIN,
     SMARTTHINGS_DOMAIN,
 )
+from .hvac import HvacSettings
 from .vehicle import (
     SmartThingsApiError,
     SmartThingsVehicleClient,
@@ -33,6 +34,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.config_entry = entry
+        self.hvac_settings = HvacSettings()
         token = self._find_smartthings_token(hass)
         self.client = SmartThingsVehicleClient(
             async_get_clientsession(hass),
@@ -74,12 +76,21 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         await self.async_request_refresh()
 
     async def async_turn_hvac_on(self) -> None:
-        await self.client.async_turn_hvac_on()
+        await self.client.async_turn_hvac_on(**self.hvac_settings.as_command_kwargs())
         await self.async_request_refresh()
 
     async def async_turn_hvac_off(self) -> None:
         await self.client.async_turn_hvac_off()
         await self.async_request_refresh()
+
+    def set_hvac_temperature(self, temperature: float | int) -> None:
+        self.hvac_settings = self.hvac_settings.with_temperature(temperature)
+
+    def set_hvac_ignition_duration(self, ignition_duration: float | int) -> None:
+        self.hvac_settings = self.hvac_settings.with_ignition_duration(ignition_duration)
+
+    def set_hvac_defog(self, defog: str) -> None:
+        self.hvac_settings = self.hvac_settings.with_defog(defog)
 
     @staticmethod
     def _find_smartthings_token(hass: HomeAssistant) -> str:
