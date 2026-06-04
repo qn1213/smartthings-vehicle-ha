@@ -19,27 +19,83 @@
   },
   "entity": {
     "sensor": {
-      "range_km": {"name": "주행 가능 거리"},
-      "odometer_km": {"name": "누적 주행 거리"},
-      "engine_state": {"name": "시동 상태"},
-      "hvac_state": {"name": "공조 상태"},
-      "cabin_temperature": {"name": "실내 온도"},
-      "lock_state": {"name": "잠금 상태"},
-      "front_left_door": {"name": "운전석 도어"},
-      "front_right_door": {"name": "조수석 도어"},
-      "rear_left_door": {"name": "뒤 좌측 도어"},
-      "rear_right_door": {"name": "뒤 우측 도어"},
-      "front_left_window": {"name": "운전석 창문"},
-      "front_right_window": {"name": "조수석 창문"},
-      "rear_left_window": {"name": "뒤 좌측 창문"},
-      "rear_right_window": {"name": "뒤 우측 창문"},
-      "fuel_warning": {"name": "연료 경고"},
-      "smart_key_battery": {"name": "스마트키 배터리"},
-      "health": {"name": "연결 상태"}
+      "range_km": {
+        "name": "주행 가능 거리"
+      },
+      "odometer_km": {
+        "name": "누적 주행 거리"
+      },
+      "engine_state": {
+        "name": "시동 상태"
+      },
+      "hvac_state": {
+        "name": "공조 상태"
+      },
+      "cabin_temperature": {
+        "name": "실내 온도"
+      },
+      "lock_state": {
+        "name": "잠금 상태"
+      },
+      "front_left_door": {
+        "name": "운전석 도어"
+      },
+      "front_right_door": {
+        "name": "조수석 도어"
+      },
+      "rear_left_door": {
+        "name": "뒤 좌측 도어"
+      },
+      "rear_right_door": {
+        "name": "뒤 우측 도어"
+      },
+      "front_left_window": {
+        "name": "운전석 창문"
+      },
+      "front_right_window": {
+        "name": "조수석 창문"
+      },
+      "rear_left_window": {
+        "name": "뒤 좌측 창문"
+      },
+      "rear_right_window": {
+        "name": "뒤 우측 창문"
+      },
+      "fuel_warning": {
+        "name": "연료 경고"
+      },
+      "smart_key_battery": {
+        "name": "스마트키 배터리"
+      },
+      "health": {
+        "name": "연결 상태"
+      }
     },
     "button": {
-      "refresh": {"name": "차량 상태 새로고침"},
-      "lock_vehicle": {"name": "차량 잠금"}
+      "refresh": {
+        "name": "차량 상태 새로고침"
+      },
+      "ping_vehicle": {
+        "name": "차량 연결 확인"
+      },
+      "lock_vehicle": {
+        "name": "차량 잠금"
+      },
+      "unlock_vehicle": {
+        "name": "차량 잠금 해제"
+      },
+      "start_engine": {
+        "name": "원격 시동 켜기"
+      },
+      "stop_engine": {
+        "name": "원격 시동 끄기"
+      },
+      "turn_hvac_on": {
+        "name": "공조 켜기"
+      },
+      "turn_hvac_off": {
+        "name": "공조 끄기"
+      }
     }
   }
 }

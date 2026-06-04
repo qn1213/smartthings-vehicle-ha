@@ -53,8 +53,32 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         await self.client.async_refresh()
         await self.async_request_refresh()
 
+    async def async_ping_vehicle(self) -> None:
+        await self.client.async_ping()
+        await self.async_request_refresh()
+
     async def async_lock_vehicle(self) -> None:
         await self.client.async_lock()
+        await self.async_request_refresh()
+
+    async def async_unlock_vehicle(self) -> None:
+        await self.client.async_unlock()
+        await self.async_request_refresh()
+
+    async def async_start_engine(self) -> None:
+        await self.client.async_start_engine()
+        await self.async_request_refresh()
+
+    async def async_stop_engine(self) -> None:
+        await self.client.async_stop_engine()
+        await self.async_request_refresh()
+
+    async def async_turn_hvac_on(self) -> None:
+        await self.client.async_turn_hvac_on()
+        await self.async_request_refresh()
+
+    async def async_turn_hvac_off(self) -> None:
+        await self.client.async_turn_hvac_off()
         await self.async_request_refresh()
 
     @staticmethod

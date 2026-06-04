@@ -137,17 +137,58 @@ class SmartThingsVehicleClient:
     async def async_refresh(self) -> VehicleCommandResult:
         return await self.async_send_command("refresh", "refresh")
 
+    async def async_ping(self) -> VehicleCommandResult:
+        return await self.async_send_command("healthCheck", "ping")
+
     async def async_lock(self) -> VehicleCommandResult:
         return await self.async_send_command("vehicleDoorState", "lock")
 
-    async def async_send_command(self, capability: str, command: str) -> VehicleCommandResult:
+    async def async_unlock(self) -> VehicleCommandResult:
+        return await self.async_send_command("vehicleDoorState", "unlock")
+
+    async def async_start_engine(self) -> VehicleCommandResult:
+        return await self.async_send_command("vehicleEngine", "startEngine")
+
+    async def async_stop_engine(self) -> VehicleCommandResult:
+        return await self.async_send_command("vehicleEngine", "stopEngine")
+
+    async def async_turn_hvac_on(
+        self,
+        *,
+        temperature: float | int = 22,
+        unit: str = "C",
+        ignition_duration: int = 10,
+        defog: str = "off",
+    ) -> VehicleCommandResult:
+        return await self.async_send_command(
+            "vehicleHvacRemoteSwitch",
+            "on",
+            arguments=[
+                {
+                    "temperature": {"value": temperature, "unit": unit},
+                    "ignitionDuration": ignition_duration,
+                    "defog": defog,
+                }
+            ],
+        )
+
+    async def async_turn_hvac_off(self) -> VehicleCommandResult:
+        return await self.async_send_command("vehicleHvacRemoteSwitch", "off")
+
+    async def async_send_command(
+        self,
+        capability: str,
+        command: str,
+        *,
+        arguments: list[Any] | None = None,
+    ) -> VehicleCommandResult:
         payload = {
             "commands": [
                 {
                     "component": "main",
                     "capability": capability,
                     "command": command,
-                    "arguments": [],
+                    "arguments": arguments or [],
                 }
             ]
         }
