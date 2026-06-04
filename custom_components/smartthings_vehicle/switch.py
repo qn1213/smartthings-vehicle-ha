@@ -12,23 +12,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import build_entity_id
 from .coordinator import SmartThingsVehicleCoordinator
-from .vehicle import VehicleStatus
-
-_ON_STATES = {"on", "running", "started"}
-_OFF_STATES = {"off", "stopped"}
-
-
-def _state_to_switch_value(state: str | None) -> bool | None:
-    if state in _ON_STATES:
-        return True
-    if state in _OFF_STATES:
-        return False
-    return None
 
 
 @dataclass(frozen=True, kw_only=True)
 class SmartThingsVehicleSwitchDescription(SwitchEntityDescription):
-    value_fn: Callable[[VehicleStatus], bool | None]
+    value_fn: Callable[[SmartThingsVehicleCoordinator], bool | None]
     turn_on_fn: Callable[[SmartThingsVehicleCoordinator], Awaitable[None]]
     turn_off_fn: Callable[[SmartThingsVehicleCoordinator], Awaitable[None]]
 
@@ -37,9 +25,16 @@ SWITCHES: tuple[SmartThingsVehicleSwitchDescription, ...] = (
     SmartThingsVehicleSwitchDescription(
         key="hvac",
         translation_key="hvac",
-        value_fn=lambda status: _state_to_switch_value(status.hvac_state),
+        value_fn=lambda coordinator: coordinator.is_hvac_on,
         turn_on_fn=lambda coordinator: coordinator.async_turn_hvac_on(),
         turn_off_fn=lambda coordinator: coordinator.async_turn_hvac_off(),
+    ),
+    SmartThingsVehicleSwitchDescription(
+        key="hvac_defog",
+        translation_key="hvac_defog",
+        value_fn=lambda coordinator: coordinator.hvac_settings.defog == "on",
+        turn_on_fn=lambda coordinator: coordinator.async_set_hvac_defog_on(),
+        turn_off_fn=lambda coordinator: coordinator.async_set_hvac_defog_off(),
     ),
 )
 
@@ -72,12 +67,12 @@ class SmartThingsVehicleSwitch(CoordinatorEntity[SmartThingsVehicleCoordinator],
 
     @property
     def is_on(self) -> bool | None:
-        if self.coordinator.data is None:
-            return None
-        return self.entity_description.value_fn(self.coordinator.data)
+        return self.entity_description.value_fn(self.coordinator)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.entity_description.turn_on_fn(self.coordinator)
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.entity_description.turn_off_fn(self.coordinator)
+        self.async_write_ha_state()

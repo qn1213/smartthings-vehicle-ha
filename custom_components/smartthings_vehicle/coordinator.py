@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import Any, Protocol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -21,10 +21,19 @@ from .vehicle import (
     SmartThingsApiError,
     SmartThingsVehicleClient,
     VehicleStatus,
+    async_wait_for_vehicle_status,
     extract_access_token,
 )
 
 _LOGGER = logging.getLogger(__name__)
+_COMMAND_CONVERGENCE_TIMEOUT_SECONDS = 24
+_COMMAND_CONVERGENCE_POLL_SECONDS = 2
+_ON_STATES = {"on", "running", "started"}
+_OFF_STATES = {"off", "stopped"}
+
+
+class _StatusPredicate(Protocol):
+    def __call__(self, status: VehicleStatus) -> bool: ...
 
 
 class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
@@ -61,11 +70,17 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     async def async_lock_vehicle(self) -> None:
         await self.client.async_lock()
-        await self.async_request_refresh()
+        await self._async_wait_for_status(
+            lambda status: status.lock_state == "locked",
+            "lock_state=locked",
+        )
 
     async def async_unlock_vehicle(self) -> None:
         await self.client.async_unlock()
-        await self.async_request_refresh()
+        await self._async_wait_for_status(
+            lambda status: status.lock_state == "unlocked",
+            "lock_state=unlocked",
+        )
 
     async def async_start_engine(self) -> None:
         await self.client.async_start_engine()
@@ -77,20 +92,69 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     async def async_turn_hvac_on(self) -> None:
         await self.client.async_turn_hvac_on(**self.hvac_settings.as_command_kwargs())
-        await self.async_request_refresh()
+        await self._async_wait_for_status(
+            lambda status: status.hvac_state in _ON_STATES,
+            "hvac_state=on",
+        )
 
     async def async_turn_hvac_off(self) -> None:
         await self.client.async_turn_hvac_off()
-        await self.async_request_refresh()
+        await self._async_wait_for_status(
+            lambda status: status.hvac_state in _OFF_STATES,
+            "hvac_state=off",
+        )
+
+    @property
+    def is_hvac_on(self) -> bool:
+        if self.data is None:
+            return False
+        return self.data.hvac_state in _ON_STATES
+
+    async def async_set_hvac_defog_on(self) -> None:
+        self.set_hvac_defog("on")
+
+    async def async_set_hvac_defog_off(self) -> None:
+        self.set_hvac_defog("off")
+
+    async def _async_wait_for_status(
+        self,
+        predicate: _StatusPredicate,
+        target_description: str,
+        *,
+        timeout_seconds: int = _COMMAND_CONVERGENCE_TIMEOUT_SECONDS,
+        poll_seconds: int = _COMMAND_CONVERGENCE_POLL_SECONDS,
+    ) -> None:
+        """Poll SmartThings status until an accepted vehicle command settles."""
+
+        result = await async_wait_for_vehicle_status(
+            self.client.async_get_status,
+            predicate,
+            self.async_set_updated_data,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
+        if result.converged:
+            return
+
+        _LOGGER.warning(
+            "SmartThings vehicle command was accepted but status did not converge to %s "
+            "within %ss%s",
+            target_description,
+            timeout_seconds,
+            f"; last status error: {result.last_error}" if result.last_error else "",
+        )
 
     def set_hvac_temperature(self, temperature: float | int) -> None:
         self.hvac_settings = self.hvac_settings.with_temperature(temperature)
+        self.async_update_listeners()
 
     def set_hvac_ignition_duration(self, ignition_duration: float | int) -> None:
         self.hvac_settings = self.hvac_settings.with_ignition_duration(ignition_duration)
+        self.async_update_listeners()
 
     def set_hvac_defog(self, defog: str) -> None:
         self.hvac_settings = self.hvac_settings.with_defog(defog)
+        self.async_update_listeners()
 
     @staticmethod
     def _find_smartthings_token(hass: HomeAssistant) -> str:

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 
 API_BASE_URL = "https://api.smartthings.com/v1"
@@ -44,6 +47,12 @@ class VehicleCommandResult:
     accepted: bool
     command_id: str | None
     raw: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class VehicleStatusConvergenceResult:
+    converged: bool
+    last_error: Exception | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +179,38 @@ def parse_command_result(payload: dict[str, Any]) -> VehicleCommandResult:
         raise SmartThingsApiError(f"SmartThings command was not accepted: {status!r}")
 
     return VehicleCommandResult(accepted=True, command_id=command_id, raw=payload)
+
+
+async def async_wait_for_vehicle_status(
+    get_status: Callable[[], Awaitable[VehicleStatus]],
+    predicate: Callable[[VehicleStatus], bool],
+    update_status: Callable[[VehicleStatus], None],
+    *,
+    timeout_seconds: int,
+    poll_seconds: int,
+) -> VehicleStatusConvergenceResult:
+    """Poll vehicle status until a SmartThings command reaches its target state."""
+
+    deadline = monotonic() + timeout_seconds
+    last_error: SmartThingsApiError | None = None
+
+    while True:
+        try:
+            status = await get_status()
+        except SmartThingsApiError as err:
+            last_error = err
+        else:
+            update_status(status)
+            if predicate(status):
+                return VehicleStatusConvergenceResult(converged=True)
+
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            return VehicleStatusConvergenceResult(
+                converged=False,
+                last_error=last_error,
+            )
+        await asyncio.sleep(min(poll_seconds, remaining))
 
 
 class SmartThingsVehicleClient:

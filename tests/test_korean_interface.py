@@ -39,6 +39,10 @@ def test_home_assistant_visible_strings_are_korean_first():
     assert strings["entity"]["sensor"]["range_km"]["name"] == "주행 가능 거리"
     assert set(strings["entity"]["button"]) == {"refresh", "ping_vehicle"}
     assert strings["entity"]["lock"]["door_lock"]["name"] == "차량 잠금"
-    assert set(strings["entity"]["switch"]) == {"hvac"}
+    assert set(strings["entity"]["switch"]) == {"hvac", "hvac_defog"}
     assert strings["entity"]["switch"]["hvac"]["name"] == "공조"
+    assert strings["entity"]["switch"]["hvac_defog"]["name"] == "앞유리 김서림 제거"
+    assert set(strings["entity"]["select"]) == {"hvac_defog", "hvac_ignition_duration"}
+    assert strings["entity"]["select"]["hvac_ignition_duration"]["name"] == "공조 작동 시간"
+    assert strings["entity"]["climate"]["hvac_climate"]["name"] == "공조 온도 조절"
     assert ko == strings

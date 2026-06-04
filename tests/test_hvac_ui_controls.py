@@ -47,7 +47,15 @@ def test_hvac_settings_reject_unsupported_ui_values(change, value):
 
 
 def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities():
-    assert PLATFORMS == ["sensor", "button", "lock", "switch", "number", "select"]
+    assert PLATFORMS == [
+        "sensor",
+        "button",
+        "lock",
+        "switch",
+        "number",
+        "select",
+        "climate",
+    ]
 
     assert build_entity_id("number", "hvac_temperature") == (
         "number.smartthings_vehicle_hvac_temperature"
@@ -56,6 +64,11 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
         "number.smartthings_vehicle_hvac_ignition_duration"
     )
     assert build_entity_id("select", "hvac_defog") == "select.smartthings_vehicle_hvac_defog"
+    assert build_entity_id("select", "hvac_ignition_duration") == (
+        "select.smartthings_vehicle_hvac_ignition_duration"
+    )
+    assert build_entity_id("switch", "hvac_defog") == "switch.smartthings_vehicle_hvac_defog"
+    assert build_entity_id("climate", "hvac") == "climate.smartthings_vehicle_hvac"
     assert build_entity_id("lock", "door_lock") == "lock.smartthings_vehicle_door_lock"
     assert build_entity_id("switch", "hvac") == "switch.smartthings_vehicle_hvac"
 
@@ -72,6 +85,9 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
         encoding="utf-8"
     )
     select_source = (ROOT / "custom_components/smartthings_vehicle/select.py").read_text(
+        encoding="utf-8"
+    )
+    climate_source = (ROOT / "custom_components/smartthings_vehicle/climate.py").read_text(
         encoding="utf-8"
     )
     coordinator_source = (
@@ -96,4 +112,10 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     assert "hvac_ignition_duration" in number_source
     assert "SelectEntity" in select_source
     assert "hvac_defog" in select_source
+    assert "hvac_ignition_duration_select" in select_source
+    assert "_DURATION_OPTIONS" in select_source
+    assert "ClimateEntity" in climate_source
+    assert "ClimateEntityFeature.TARGET_TEMPERATURE" in climate_source
+    assert "async_set_temperature" in climate_source
     assert "self.hvac_settings.as_command_kwargs()" in coordinator_source
+    assert "_async_wait_for_status" in coordinator_source

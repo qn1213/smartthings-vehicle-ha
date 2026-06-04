@@ -5,7 +5,7 @@ SMARTTHINGS_DOMAIN = "smartthings"
 CONF_DEVICE_ID = "device_id"
 CONF_TITLE = "title"
 DEFAULT_SCAN_INTERVAL_SECONDS = 300
-PLATFORMS = ["sensor", "button", "lock", "switch", "number", "select"]
+PLATFORMS = ["sensor", "button", "lock", "switch", "number", "select", "climate"]
 
 
 def build_entity_id(platform: str, key: str) -> str:
