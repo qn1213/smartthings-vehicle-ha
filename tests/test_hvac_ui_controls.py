@@ -122,3 +122,8 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     assert "_async_wait_for_status" in coordinator_source
     assert "_assume_status" in coordinator_source
     assert "publish_intermediate_statuses=False" in coordinator_source
+    assert "_TOKEN_REFRESH_MARGIN_SECONDS = 600" in coordinator_source
+    assert "async_call_later" in coordinator_source
+    assert "_async_ensure_fresh_token" in coordinator_source
+    assert "SmartThingsUnauthorizedError" in coordinator_source
+    assert "retrying once" in coordinator_source

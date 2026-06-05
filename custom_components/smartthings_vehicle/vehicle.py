@@ -13,6 +13,16 @@ class SmartThingsApiError(RuntimeError):
     """Raised when SmartThings vehicle API data or commands are invalid."""
 
 
+class SmartThingsUnauthorizedError(SmartThingsApiError):
+    """Raised when SmartThings rejects the current OAuth access token."""
+
+
+@dataclass(frozen=True, slots=True)
+class SmartThingsTokenInfo:
+    access_token: str
+    expires_at: float | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class VehicleStatus:
     range_km: float | int | None = None
@@ -80,20 +90,44 @@ def _nested_unit(payload: dict[str, Any], capability: str, attribute: str) -> st
     return unit if isinstance(unit, str) else None
 
 
-def extract_access_token(data: dict[str, Any]) -> str:
-    """Extract a SmartThings OAuth access token from HA config-entry-like data."""
+def _coerce_expires_at(value: Any) -> float | None:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def extract_token_info(data: dict[str, Any]) -> SmartThingsTokenInfo:
+    """Extract a SmartThings OAuth access token and expiry from HA config-entry-like data."""
 
     direct = data.get("access_token") or data.get("accessToken")
     if isinstance(direct, str) and direct:
-        return direct
+        return SmartThingsTokenInfo(
+            access_token=direct,
+            expires_at=_coerce_expires_at(data.get("expires_at") or data.get("expiresAt")),
+        )
 
     for value in data.values():
         if isinstance(value, dict):
             token = value.get("access_token") or value.get("accessToken")
             if isinstance(token, str) and token:
-                return token
+                expires_at = value.get("expires_at") or value.get("expiresAt")
+                return SmartThingsTokenInfo(
+                    access_token=token,
+                    expires_at=_coerce_expires_at(expires_at),
+                )
 
     raise SmartThingsApiError("SmartThings access token was not found")
+
+
+def extract_access_token(data: dict[str, Any]) -> str:
+    """Extract a SmartThings OAuth access token from HA config-entry-like data."""
+
+    return extract_token_info(data).access_token
 
 
 def _device_has_vehicle_capability(device: dict[str, Any]) -> bool:
@@ -222,6 +256,13 @@ class SmartThingsVehicleClient:
         self.device_id = device_id
 
     @property
+    def access_token(self) -> str:
+        return self._access_token
+
+    def set_access_token(self, access_token: str) -> None:
+        self._access_token = access_token
+
+    @property
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._access_token}",
@@ -312,6 +353,11 @@ class SmartThingsVehicleClient:
             headers=headers,
             **kwargs,
         ) as response:
+            if response.status == 401:
+                text = await response.text()
+                raise SmartThingsUnauthorizedError(
+                    f"SmartThings HTTP {response.status}: {text[:500]}"
+                )
             if response.status >= 400:
                 text = await response.text()
                 raise SmartThingsApiError(f"SmartThings HTTP {response.status}: {text[:500]}")
