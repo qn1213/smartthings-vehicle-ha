@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from time import monotonic
 from typing import Any
 
@@ -57,6 +57,67 @@ class VehicleCommandResult:
     accepted: bool
     command_id: str | None
     raw: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class VehicleCommandStatus:
+    state: str
+    last_command: str | None = None
+    target: str | None = None
+    command_id: str | None = None
+    started_at: float | None = None
+    completed_at: float | None = None
+    last_error: str | None = None
+
+    @classmethod
+    def idle(cls) -> VehicleCommandStatus:
+        return cls(state="idle")
+
+    def mark_pending(
+        self,
+        *,
+        command: str,
+        target: str | None,
+        started_at: float,
+    ) -> VehicleCommandStatus:
+        return VehicleCommandStatus(
+            state="pending",
+            last_command=command,
+            target=target,
+            started_at=started_at,
+        )
+
+    def mark_accepted(self, command_id: str | None) -> VehicleCommandStatus:
+        return replace(self, state="accepted", command_id=command_id)
+
+    def mark_converged(self, *, completed_at: float) -> VehicleCommandStatus:
+        return replace(self, state="converged", completed_at=completed_at)
+
+    def mark_timeout(self, last_error: str, *, completed_at: float) -> VehicleCommandStatus:
+        return replace(
+            self,
+            state="timeout",
+            completed_at=completed_at,
+            last_error=last_error,
+        )
+
+    def mark_failed(self, last_error: str, *, completed_at: float) -> VehicleCommandStatus:
+        return replace(
+            self,
+            state="failed",
+            completed_at=completed_at,
+            last_error=last_error,
+        )
+
+    def as_attributes(self) -> dict[str, Any]:
+        return {
+            "last_command": self.last_command,
+            "target": self.target,
+            "command_id": self.command_id,
+            "started_at": self.started_at,
+            "completed_at": self.completed_at,
+            "last_error": self.last_error,
+        }
 
 
 @dataclass(frozen=True, slots=True)

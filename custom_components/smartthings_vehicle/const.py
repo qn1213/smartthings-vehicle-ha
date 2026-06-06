@@ -4,7 +4,7 @@ DOMAIN = "smartthings_vehicle"
 SMARTTHINGS_DOMAIN = "smartthings"
 CONF_DEVICE_ID = "device_id"
 CONF_TITLE = "title"
-DEFAULT_SCAN_INTERVAL_SECONDS = 300
+DEFAULT_SCAN_INTERVAL_SECONDS = 60
 PLATFORMS = ["sensor", "button", "lock", "switch", "number", "select", "climate"]
 
 

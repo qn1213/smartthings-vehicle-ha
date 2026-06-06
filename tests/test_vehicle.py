@@ -3,6 +3,7 @@ import pytest
 from custom_components.smartthings_vehicle.vehicle import (
     SmartThingsApiError,
     VehicleCommandResult,
+    VehicleCommandStatus,
     VehicleStatus,
     extract_access_token,
     parse_command_result,
@@ -99,3 +100,38 @@ def test_parse_command_result_requires_accepted_status():
 def test_parse_command_result_rejects_failed_status():
     with pytest.raises(SmartThingsApiError):
         parse_command_result({"results": [{"id": "abc", "status": "FAILED"}]})
+
+
+def test_vehicle_command_status_tracks_pending_response_and_terminal_states():
+    status = VehicleCommandStatus.idle().mark_pending(
+        command="lock",
+        target="lock_state=locked",
+        started_at=100.0,
+    )
+
+    assert status.state == "pending"
+    assert status.as_attributes() == {
+        "last_command": "lock",
+        "target": "lock_state=locked",
+        "command_id": None,
+        "started_at": 100.0,
+        "completed_at": None,
+        "last_error": None,
+    }
+
+    accepted = status.mark_accepted("cmd-1")
+    assert accepted.state == "accepted"
+    assert accepted.command_id == "cmd-1"
+    assert accepted.completed_at is None
+
+    converged = accepted.mark_converged(completed_at=104.0)
+    assert converged.state == "converged"
+    assert converged.completed_at == 104.0
+
+    timed_out = accepted.mark_timeout("status did not converge", completed_at=124.0)
+    assert timed_out.state == "timeout"
+    assert timed_out.last_error == "status did not converge"
+
+    failed = status.mark_failed("SmartThings HTTP 500", completed_at=101.0)
+    assert failed.state == "failed"
+    assert failed.last_error == "SmartThings HTTP 500"

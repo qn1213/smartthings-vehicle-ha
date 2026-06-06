@@ -73,6 +73,9 @@
       },
       "health": {
         "name": "연결 상태"
+      },
+      "command_state": {
+        "name": "명령 상태"
       }
     },
     "button": {

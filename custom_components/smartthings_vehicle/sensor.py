@@ -13,12 +13,21 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import build_entity_id
 from .coordinator import SmartThingsVehicleCoordinator
-from .vehicle import VehicleStatus
 
 
 @dataclass(frozen=True, kw_only=True)
 class SmartThingsVehicleSensorDescription(SensorEntityDescription):
-    value_fn: Callable[[VehicleStatus], Any]
+    value_fn: Callable[[SmartThingsVehicleCoordinator], Any]
+    attr_fn: Callable[[SmartThingsVehicleCoordinator], dict[str, Any] | None] | None = None
+
+
+def _status_value(attribute: str) -> Callable[[SmartThingsVehicleCoordinator], Any]:
+    def value(coordinator: SmartThingsVehicleCoordinator) -> Any:
+        if coordinator.data is None:
+            return None
+        return getattr(coordinator.data, attribute)
+
+    return value
 
 
 SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
@@ -27,91 +36,97 @@ SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
         translation_key="range_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
-        value_fn=lambda status: status.range_km,
+        value_fn=_status_value("range_km"),
     ),
     SmartThingsVehicleSensorDescription(
         key="odometer_km",
         translation_key="odometer_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
-        value_fn=lambda status: status.odometer_km,
+        value_fn=_status_value("odometer_km"),
     ),
     SmartThingsVehicleSensorDescription(
         key="engine_state",
         translation_key="engine_state",
-        value_fn=lambda status: status.engine_state,
+        value_fn=_status_value("engine_state"),
     ),
     SmartThingsVehicleSensorDescription(
         key="hvac_state",
         translation_key="hvac_state",
-        value_fn=lambda status: status.hvac_state,
+        value_fn=_status_value("hvac_state"),
     ),
     SmartThingsVehicleSensorDescription(
         key="cabin_temperature",
         translation_key="cabin_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
-        value_fn=lambda status: status.cabin_temperature,
+        value_fn=_status_value("cabin_temperature"),
     ),
     SmartThingsVehicleSensorDescription(
         key="lock_state",
         translation_key="lock_state",
-        value_fn=lambda status: status.lock_state,
+        value_fn=_status_value("lock_state"),
     ),
     SmartThingsVehicleSensorDescription(
         key="front_left_door",
         translation_key="front_left_door",
-        value_fn=lambda status: status.front_left_door,
+        value_fn=_status_value("front_left_door"),
     ),
     SmartThingsVehicleSensorDescription(
         key="front_right_door",
         translation_key="front_right_door",
-        value_fn=lambda status: status.front_right_door,
+        value_fn=_status_value("front_right_door"),
     ),
     SmartThingsVehicleSensorDescription(
         key="rear_left_door",
         translation_key="rear_left_door",
-        value_fn=lambda status: status.rear_left_door,
+        value_fn=_status_value("rear_left_door"),
     ),
     SmartThingsVehicleSensorDescription(
         key="rear_right_door",
         translation_key="rear_right_door",
-        value_fn=lambda status: status.rear_right_door,
+        value_fn=_status_value("rear_right_door"),
     ),
     SmartThingsVehicleSensorDescription(
         key="front_left_window",
         translation_key="front_left_window",
-        value_fn=lambda status: status.front_left_window,
+        value_fn=_status_value("front_left_window"),
     ),
     SmartThingsVehicleSensorDescription(
         key="front_right_window",
         translation_key="front_right_window",
-        value_fn=lambda status: status.front_right_window,
+        value_fn=_status_value("front_right_window"),
     ),
     SmartThingsVehicleSensorDescription(
         key="rear_left_window",
         translation_key="rear_left_window",
-        value_fn=lambda status: status.rear_left_window,
+        value_fn=_status_value("rear_left_window"),
     ),
     SmartThingsVehicleSensorDescription(
         key="rear_right_window",
         translation_key="rear_right_window",
-        value_fn=lambda status: status.rear_right_window,
+        value_fn=_status_value("rear_right_window"),
     ),
     SmartThingsVehicleSensorDescription(
         key="fuel_warning",
         translation_key="fuel_warning",
-        value_fn=lambda status: status.fuel_warning,
+        value_fn=_status_value("fuel_warning"),
     ),
     SmartThingsVehicleSensorDescription(
         key="smart_key_battery",
         translation_key="smart_key_battery",
-        value_fn=lambda status: status.smart_key_battery,
+        value_fn=_status_value("smart_key_battery"),
     ),
     SmartThingsVehicleSensorDescription(
         key="health",
         translation_key="health",
-        value_fn=lambda status: status.health,
+        value_fn=_status_value("health"),
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="command_state",
+        translation_key="command_state",
+        value_fn=lambda coordinator: coordinator.command_status.state,
+        attr_fn=lambda coordinator: coordinator.command_status.as_attributes(),
     ),
 )
 
@@ -144,6 +159,10 @@ class SmartThingsVehicleSensor(CoordinatorEntity[SmartThingsVehicleCoordinator],
 
     @property
     def native_value(self) -> Any:
-        if self.coordinator.data is None:
+        return self.entity_description.value_fn(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        if self.entity_description.attr_fn is None:
             return None
-        return self.entity_description.value_fn(self.coordinator.data)
+        return self.entity_description.attr_fn(self.coordinator)

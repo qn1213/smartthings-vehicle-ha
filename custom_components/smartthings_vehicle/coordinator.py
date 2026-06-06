@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from dataclasses import replace
 from datetime import timedelta
 from time import time
 from typing import Any, Protocol, TypeVar
@@ -26,7 +25,10 @@ from .vehicle import (
     SmartThingsTokenInfo,
     SmartThingsUnauthorizedError,
     SmartThingsVehicleClient,
+    VehicleCommandResult,
+    VehicleCommandStatus,
     VehicleStatus,
+    VehicleStatusConvergenceResult,
     async_wait_for_vehicle_status,
     extract_token_info,
 )
@@ -52,6 +54,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.config_entry = entry
         self.hvac_settings = HvacSettings()
+        self.command_status = VehicleCommandStatus.idle()
         token_info = self._find_smartthings_token_info(hass)
         self.client = SmartThingsVehicleClient(
             async_get_clientsession(hass),
@@ -72,59 +75,97 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         return await self._async_get_status_with_fresh_token()
 
     async def async_refresh_vehicle(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_refresh)
+        await self._async_send_tracked_command(
+            "refresh",
+            "status=refreshed",
+            self.client.async_refresh,
+        )
         await self.async_request_refresh()
+        self._set_command_status(self.command_status.mark_converged(completed_at=time()))
 
     async def async_ping_vehicle(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_ping)
+        await self._async_send_tracked_command(
+            "ping",
+            "health=online",
+            self.client.async_ping,
+        )
         await self.async_request_refresh()
+        self._set_command_status(self.command_status.mark_converged(completed_at=time()))
 
     async def async_lock_vehicle(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_lock)
-        self._assume_status(lock_state="locked")
-        await self._async_wait_for_status(
+        await self._async_send_tracked_command(
+            "lock",
+            "lock_state=locked",
+            self.client.async_lock,
+        )
+        result = await self._async_wait_for_status(
             lambda status: status.lock_state == "locked",
             "lock_state=locked",
-            publish_intermediate_statuses=False,
         )
+        self._finalize_command_status(result, "status did not converge to lock_state=locked")
 
     async def async_unlock_vehicle(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_unlock)
-        self._assume_status(lock_state="unlocked")
-        await self._async_wait_for_status(
+        await self._async_send_tracked_command(
+            "unlock",
+            "lock_state=unlocked",
+            self.client.async_unlock,
+        )
+        result = await self._async_wait_for_status(
             lambda status: status.lock_state == "unlocked",
             "lock_state=unlocked",
-            publish_intermediate_statuses=False,
         )
+        self._finalize_command_status(result, "status did not converge to lock_state=unlocked")
 
     async def async_start_engine(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_start_engine)
-        await self.async_request_refresh()
+        await self._async_send_tracked_command(
+            "start_engine",
+            "engine_state=running",
+            self.client.async_start_engine,
+        )
+        result = await self._async_wait_for_status(
+            lambda status: status.engine_state == "running",
+            "engine_state=running",
+            timeout_seconds=60,
+        )
+        self._finalize_command_status(result, "status did not converge to engine_state=running")
 
     async def async_stop_engine(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_stop_engine)
-        await self.async_request_refresh()
+        await self._async_send_tracked_command(
+            "stop_engine",
+            "engine_state=off",
+            self.client.async_stop_engine,
+        )
+        result = await self._async_wait_for_status(
+            lambda status: status.engine_state == "off",
+            "engine_state=off",
+            timeout_seconds=60,
+        )
+        self._finalize_command_status(result, "status did not converge to engine_state=off")
 
     async def async_turn_hvac_on(self) -> None:
-        await self._async_call_with_fresh_token(
+        await self._async_send_tracked_command(
+            "turn_hvac_on",
+            "hvac_state=on",
             self.client.async_turn_hvac_on,
             **self.hvac_settings.as_command_kwargs(),
         )
-        self._assume_status(hvac_state="on")
-        await self._async_wait_for_status(
+        result = await self._async_wait_for_status(
             lambda status: status.hvac_state in _ON_STATES,
             "hvac_state=on",
-            publish_intermediate_statuses=False,
         )
+        self._finalize_command_status(result, "status did not converge to hvac_state=on")
 
     async def async_turn_hvac_off(self) -> None:
-        await self._async_call_with_fresh_token(self.client.async_turn_hvac_off)
-        self._assume_status(hvac_state="off")
-        await self._async_wait_for_status(
+        await self._async_send_tracked_command(
+            "turn_hvac_off",
+            "hvac_state=off",
+            self.client.async_turn_hvac_off,
+        )
+        result = await self._async_wait_for_status(
             lambda status: status.hvac_state in _OFF_STATES,
             "hvac_state=off",
-            publish_intermediate_statuses=False,
         )
+        self._finalize_command_status(result, "status did not converge to hvac_state=off")
 
     @property
     def is_hvac_on(self) -> bool:
@@ -157,6 +198,54 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
             )
             await self._async_ensure_fresh_token(force_reload=True)
             return await callback(*args, **kwargs)
+
+    async def _async_send_tracked_command(
+        self,
+        command: str,
+        target: str | None,
+        callback: Callable[..., Awaitable[VehicleCommandResult]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> VehicleCommandResult:
+        self._set_command_status(
+            self.command_status.mark_pending(
+                command=command,
+                target=target,
+                started_at=time(),
+            )
+        )
+        try:
+            result = await self._async_call_with_fresh_token(callback, *args, **kwargs)
+        except Exception as err:
+            self._set_command_status(
+                self.command_status.mark_failed(str(err), completed_at=time())
+            )
+            raise
+
+        self._set_command_status(self.command_status.mark_accepted(result.command_id))
+        return result
+
+    def _set_command_status(self, status: VehicleCommandStatus) -> None:
+        self.command_status = status
+        self.async_update_listeners()
+
+    def _finalize_command_status(
+        self,
+        result: VehicleStatusConvergenceResult,
+        timeout_message: str,
+    ) -> None:
+        if result.converged:
+            self._set_command_status(self.command_status.mark_converged(completed_at=time()))
+            return
+
+        last_error = (
+            f"{timeout_message}; last status error: {result.last_error}"
+            if result.last_error
+            else timeout_message
+        )
+        self._set_command_status(
+            self.command_status.mark_timeout(last_error, completed_at=time())
+        )
 
     async def _async_ensure_fresh_token(self, *, force_reload: bool = False) -> None:
         token_info = self._find_smartthings_token_info(self.hass)
@@ -229,13 +318,11 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
         *,
         timeout_seconds: int = _COMMAND_CONVERGENCE_TIMEOUT_SECONDS,
         poll_seconds: int = _COMMAND_CONVERGENCE_POLL_SECONDS,
-        publish_intermediate_statuses: bool = True,
-    ) -> None:
+    ) -> VehicleStatusConvergenceResult:
         """Poll SmartThings status until an accepted vehicle command settles."""
 
         def update_status(status: VehicleStatus) -> None:
-            if publish_intermediate_statuses or predicate(status):
-                self.async_set_updated_data(status)
+            self.async_set_updated_data(status)
 
         result = await async_wait_for_vehicle_status(
             self._async_get_status_with_fresh_token,
@@ -245,7 +332,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
             poll_seconds=poll_seconds,
         )
         if result.converged:
-            return
+            return result
 
         _LOGGER.warning(
             "SmartThings vehicle command was accepted but status did not converge to %s "
@@ -254,11 +341,7 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
             timeout_seconds,
             f"; last status error: {result.last_error}" if result.last_error else "",
         )
-
-    def _assume_status(self, **updates: str) -> None:
-        """Immediately publish a command target state, then reconcile by polling."""
-
-        self.async_set_updated_data(replace(self.data or VehicleStatus(), **updates))
+        return result
 
     def set_hvac_temperature(self, temperature: float | int) -> None:
         self.hvac_settings = self.hvac_settings.with_temperature(temperature)

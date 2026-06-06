@@ -81,6 +81,9 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     switch_source = (ROOT / "custom_components/smartthings_vehicle/switch.py").read_text(
         encoding="utf-8"
     )
+    sensor_source = (ROOT / "custom_components/smartthings_vehicle/sensor.py").read_text(
+        encoding="utf-8"
+    )
     number_source = (ROOT / "custom_components/smartthings_vehicle/number.py").read_text(
         encoding="utf-8"
     )
@@ -120,8 +123,14 @@ def test_home_assistant_platforms_include_hvac_number_select_and_toggle_entities
     assert "async_set_temperature" in climate_source
     assert "self.hvac_settings.as_command_kwargs()" in coordinator_source
     assert "_async_wait_for_status" in coordinator_source
-    assert "_assume_status" in coordinator_source
-    assert "publish_intermediate_statuses=False" in coordinator_source
+    assert "VehicleCommandStatus.idle()" in coordinator_source
+    assert "mark_pending" in coordinator_source
+    assert "mark_accepted" in coordinator_source
+    assert "mark_converged" in coordinator_source
+    assert "mark_timeout" in coordinator_source
+    assert "publish_intermediate_statuses=False" not in coordinator_source
+    assert "command_state" in sensor_source
+    assert "extra_state_attributes" in sensor_source
     assert "_TOKEN_REFRESH_MARGIN_SECONDS = 600" in coordinator_source
     assert "async_call_later" in coordinator_source
     assert "_async_ensure_fresh_token" in coordinator_source
