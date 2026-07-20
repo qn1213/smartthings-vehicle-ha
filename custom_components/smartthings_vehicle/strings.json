@@ -29,11 +29,35 @@
       "odometer_km": {
         "name": "누적 주행 거리"
       },
+      "vehicle_make": {
+        "name": "제조사"
+      },
+      "vehicle_model": {
+        "name": "차량 모델"
+      },
+      "vehicle_year": {
+        "name": "연식"
+      },
+      "vehicle_trim": {
+        "name": "트림"
+      },
+      "vehicle_color": {
+        "name": "차량 색상"
+      },
+      "vehicle_plate": {
+        "name": "차량 번호"
+      },
       "engine_state": {
         "name": "시동 상태"
       },
       "hvac_state": {
         "name": "공조 상태"
+      },
+      "hvac_speed": {
+        "name": "공조 풍량"
+      },
+      "defog_state": {
+        "name": "김서림 제거 상태"
       },
       "cabin_temperature": {
         "name": "실내 온도"
@@ -69,7 +93,34 @@
         "name": "연료 경고"
       },
       "smart_key_battery": {
-        "name": "스마트키 배터리"
+        "name": "스마트키 배터리 경고"
+      },
+      "tire_pressure_warning": {
+        "name": "타이어 공기압 경고"
+      },
+      "tire_pressure_front_left": {
+        "name": "운전석 앞 타이어 공기압 경고"
+      },
+      "tire_pressure_front_right": {
+        "name": "조수석 앞 타이어 공기압 경고"
+      },
+      "tire_pressure_rear_left": {
+        "name": "운전석 뒤 타이어 공기압 경고"
+      },
+      "tire_pressure_rear_right": {
+        "name": "조수석 뒤 타이어 공기압 경고"
+      },
+      "lamp_wire_warning": {
+        "name": "외장 램프 회로 경고"
+      },
+      "washer_fluid_warning": {
+        "name": "워셔액 경고"
+      },
+      "brake_fluid_warning": {
+        "name": "브레이크액 경고"
+      },
+      "engine_oil_warning": {
+        "name": "엔진오일 경고"
       },
       "ev_battery_level": {
         "name": "고전압 배터리 잔량"
@@ -82,9 +133,6 @@
       },
       "charging_plug": {
         "name": "충전 커넥터 상태"
-      },
-      "charging_remaining_time": {
-        "name": "충전 남은 시간"
       },
       "auxiliary_battery_warning": {
         "name": "보조 배터리 경고"

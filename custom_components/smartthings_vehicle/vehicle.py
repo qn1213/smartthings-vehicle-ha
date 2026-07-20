@@ -28,8 +28,17 @@ class SmartThingsTokenInfo:
 class VehicleStatus:
     range_km: float | int | None = None
     odometer_km: float | int | None = None
+    vehicle_make: str | None = None
+    vehicle_model: str | None = None
+    vehicle_year: int | None = None
+    vehicle_trim: str | None = None
+    vehicle_color: str | None = None
+    vehicle_plate: str | None = None
+    vehicle_image: str | None = None
     engine_state: str | None = None
     hvac_state: str | None = None
+    hvac_speed: int | None = None
+    defog_state: str | None = None
     cabin_temperature: float | int | None = None
     cabin_temperature_unit: str | None = None
     lock_state: str | None = None
@@ -43,10 +52,18 @@ class VehicleStatus:
     rear_right_window: str | None = None
     fuel_warning: str | None = None
     smart_key_battery: str | None = None
+    tire_pressure_warning: str | None = None
+    tire_pressure_front_left: str | None = None
+    tire_pressure_front_right: str | None = None
+    tire_pressure_rear_left: str | None = None
+    tire_pressure_rear_right: str | None = None
+    lamp_wire_warning: str | None = None
+    washer_fluid_warning: str | None = None
+    brake_fluid_warning: str | None = None
+    engine_oil_warning: str | None = None
     ev_battery_level: float | int | None = None
     charging_state: str | None = None
     charging_plug: str | None = None
-    charging_remaining_time: float | int | None = None
     charging_detail: str | None = None
     auxiliary_battery_warning: str | None = None
     electric_vehicle_battery_warning: str | None = None
@@ -208,6 +225,19 @@ def _available_status_attributes(main: dict[str, Any]) -> frozenset[str]:
     return frozenset(attributes)
 
 
+def _aggregate_warning(*values: Any) -> str | None:
+    """Combine Hyundai per-position warnings into its public API warning state."""
+
+    reported = [value for value in values if isinstance(value, str)]
+    if not reported:
+        return None
+    if "warning" in reported:
+        return "warning"
+    if all(value == "normal" for value in reported):
+        return "normal"
+    return None
+
+
 def _coerce_expires_at(value: Any) -> float | None:
     if isinstance(value, int | float):
         return float(value)
@@ -298,11 +328,40 @@ def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
     """Map SmartThings `/status` JSON into a stable vehicle status dataclass."""
 
     main = _main_component(payload)
+    tire_pressure_front_left = _nested_value(
+        payload,
+        "vehicleWarning",
+        "tirePressureFrontLeft",
+    )
+    tire_pressure_front_right = _nested_value(
+        payload,
+        "vehicleWarning",
+        "tirePressureFrontRight",
+    )
+    tire_pressure_rear_left = _nested_value(
+        payload,
+        "vehicleWarning",
+        "tirePressureRearLeft",
+    )
+    tire_pressure_rear_right = _nested_value(
+        payload,
+        "vehicleWarning",
+        "tirePressureRearRight",
+    )
     return VehicleStatus(
         range_km=_nested_value(payload, "vehicleRange", "estimatedRemainingRange"),
         odometer_km=_nested_value(payload, "vehicleOdometer", "odometerReading"),
+        vehicle_make=_nested_value(payload, "vehicleInformation", "vehicleMake"),
+        vehicle_model=_nested_value(payload, "vehicleInformation", "vehicleModel"),
+        vehicle_year=_nested_value(payload, "vehicleInformation", "vehicleYear"),
+        vehicle_trim=_nested_value(payload, "vehicleInformation", "vehicleTrim"),
+        vehicle_color=_nested_value(payload, "vehicleInformation", "vehicleColor"),
+        vehicle_plate=_nested_value(payload, "vehicleInformation", "vehiclePlate"),
+        vehicle_image=_nested_value(payload, "vehicleInformation", "vehicleImage"),
         engine_state=_nested_value(payload, "vehicleEngine", "engineState"),
         hvac_state=_nested_value(payload, "vehicleHvac", "hvacState"),
+        hvac_speed=_nested_value(payload, "vehicleHvac", "hvacSpeed"),
+        defog_state=_nested_value(payload, "vehicleHvac", "defogState"),
         cabin_temperature=_nested_value(payload, "vehicleHvac", "temperature"),
         cabin_temperature_unit=_nested_unit(payload, "vehicleHvac", "temperature"),
         lock_state=_nested_value(payload, "vehicleDoorState", "lockState"),
@@ -316,14 +375,23 @@ def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
         rear_right_window=_nested_value(payload, "vehicleWindowState", "rearRightWindow"),
         fuel_warning=_nested_value(payload, "vehicleWarning", "fuel"),
         smart_key_battery=_nested_value(payload, "vehicleWarning", "smartKeyBattery"),
+        tire_pressure_warning=_aggregate_warning(
+            tire_pressure_front_left,
+            tire_pressure_front_right,
+            tire_pressure_rear_left,
+            tire_pressure_rear_right,
+        ),
+        tire_pressure_front_left=tire_pressure_front_left,
+        tire_pressure_front_right=tire_pressure_front_right,
+        tire_pressure_rear_left=tire_pressure_rear_left,
+        tire_pressure_rear_right=tire_pressure_rear_right,
+        lamp_wire_warning=_nested_value(payload, "vehicleWarning", "lampWire"),
+        washer_fluid_warning=_nested_value(payload, "vehicleWarning", "washerFluid"),
+        brake_fluid_warning=_nested_value(payload, "vehicleWarning", "brakeFluid"),
+        engine_oil_warning=_nested_value(payload, "vehicleWarning", "engineOil"),
         ev_battery_level=_nested_value(payload, "vehicleBattery", "batteryLevel"),
         charging_state=_nested_value(payload, "vehicleBattery", "chargingState"),
         charging_plug=_nested_value(payload, "vehicleBattery", "chargingPlug"),
-        charging_remaining_time=_nested_value(
-            payload,
-            "vehicleBattery",
-            "chargingRemainTime",
-        ),
         charging_detail=_nested_value(payload, "vehicleBattery", "chargingDetail"),
         auxiliary_battery_warning=_nested_value(
             payload,

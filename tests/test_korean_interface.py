@@ -46,9 +46,38 @@ def test_home_assistant_visible_strings_are_korean_first():
     assert strings["entity"]["sensor"]["charging_plug"]["name"] == (
         "충전 커넥터 상태"
     )
-    assert strings["entity"]["sensor"]["charging_remaining_time"]["name"] == (
-        "충전 남은 시간"
+    assert strings["entity"]["sensor"]["vehicle_model"]["name"] == "차량 모델"
+    assert strings["entity"]["sensor"]["tire_pressure_warning"]["name"] == (
+        "타이어 공기압 경고"
     )
+    assert strings["entity"]["sensor"]["lamp_wire_warning"]["name"] == (
+        "외장 램프 회로 경고"
+    )
+    assert strings["entity"]["sensor"]["washer_fluid_warning"]["name"] == (
+        "워셔액 경고"
+    )
+    assert strings["entity"]["sensor"]["brake_fluid_warning"]["name"] == (
+        "브레이크액 경고"
+    )
+    assert strings["entity"]["sensor"]["engine_oil_warning"]["name"] == (
+        "엔진오일 경고"
+    )
+    assert {
+        "fuel_warning",
+        "smart_key_battery",
+        "tire_pressure_warning",
+        "tire_pressure_front_left",
+        "tire_pressure_front_right",
+        "tire_pressure_rear_left",
+        "tire_pressure_rear_right",
+        "lamp_wire_warning",
+        "washer_fluid_warning",
+        "brake_fluid_warning",
+        "engine_oil_warning",
+        "auxiliary_battery_warning",
+        "electric_vehicle_battery_warning",
+    } <= set(strings["entity"]["sensor"])
+    assert "charging_remaining_time" not in strings["entity"]["sensor"]
     assert set(strings["entity"]["button"]) == {"refresh", "ping_vehicle"}
     assert strings["entity"]["lock"]["door_lock"]["name"] == "차량 잠금"
     assert set(strings["entity"]["switch"]) == {"hvac", "hvac_defog"}

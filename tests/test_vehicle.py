@@ -28,9 +28,20 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
             "main": {
                 "vehicleRange": {"estimatedRemainingRange": {"value": 412, "unit": "km"}},
                 "vehicleOdometer": {"odometerReading": {"value": 12345.6, "unit": "km"}},
+                "vehicleInformation": {
+                    "vehicleMake": {"value": "Hyundai"},
+                    "vehicleModel": {"value": "IONIQ 5"},
+                    "vehicleYear": {"value": 2025},
+                    "vehicleTrim": {"value": "Prestige"},
+                    "vehicleColor": {"value": "Digital Teal"},
+                    "vehiclePlate": {"value": "12가3456"},
+                    "vehicleImage": {"value": "https://example.com/ioniq5.png"},
+                },
                 "vehicleEngine": {"engineState": {"value": "off"}},
                 "vehicleHvac": {
                     "hvacState": {"value": "off"},
+                    "hvacSpeed": {"value": 3},
+                    "defogState": {"value": "off"},
                     "temperature": {"value": 22, "unit": "C"},
                 },
                 "vehicleDoorState": {
@@ -49,6 +60,14 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
                 "vehicleWarning": {
                     "fuel": {"value": "normal"},
                     "smartKeyBattery": {"value": "normal"},
+                    "tirePressureFrontLeft": {"value": "normal"},
+                    "tirePressureFrontRight": {"value": "normal"},
+                    "tirePressureRearLeft": {"value": "warning"},
+                    "tirePressureRearRight": {"value": "normal"},
+                    "lampWire": {"value": "normal"},
+                    "washerFluid": {"value": "warning"},
+                    "brakeFluid": {"value": "normal"},
+                    "engineOil": {"value": "normal"},
                 },
                 "healthCheck": {"DeviceWatch-DeviceStatus": {"value": "online"}},
             }
@@ -60,8 +79,17 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
     assert status == VehicleStatus(
         range_km=412,
         odometer_km=12345.6,
+        vehicle_make="Hyundai",
+        vehicle_model="IONIQ 5",
+        vehicle_year=2025,
+        vehicle_trim="Prestige",
+        vehicle_color="Digital Teal",
+        vehicle_plate="12가3456",
+        vehicle_image="https://example.com/ioniq5.png",
         engine_state="off",
         hvac_state="off",
+        hvac_speed=3,
+        defog_state="off",
         cabin_temperature=22,
         cabin_temperature_unit="C",
         lock_state="locked",
@@ -75,6 +103,15 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
         rear_right_window="closed",
         fuel_warning="normal",
         smart_key_battery="normal",
+        tire_pressure_warning="warning",
+        tire_pressure_front_left="normal",
+        tire_pressure_front_right="normal",
+        tire_pressure_rear_left="warning",
+        tire_pressure_rear_right="normal",
+        lamp_wire_warning="normal",
+        washer_fluid_warning="warning",
+        brake_fluid_warning="normal",
+        engine_oil_warning="normal",
         health="online",
     )
 
@@ -100,12 +137,19 @@ def test_parse_2025_ioniq5_electric_vehicle_status():
                     "batteryLevel": {"value": 72, "unit": "%"},
                     "chargingState": {"value": "charging"},
                     "chargingPlug": {"value": "connected"},
-                    "chargingRemainTime": {"value": 95, "unit": "mins"},
                     "chargingDetail": {"value": "fastCharging"},
                 },
                 "vehicleWarning": {
                     "auxiliaryBattery": {"value": "normal"},
                     "electricVehicleBattery": {"value": "normal"},
+                    "tirePressureFrontLeft": {"value": "normal"},
+                    "tirePressureFrontRight": {"value": "normal"},
+                    "tirePressureRearLeft": {"value": "normal"},
+                    "tirePressureRearRight": {"value": "normal"},
+                    "lampWire": {"value": "normal"},
+                    "washerFluid": {"value": "normal"},
+                    "brakeFluid": {"value": "normal"},
+                    "engineOil": {"value": "normal"},
                 },
             }
         }
@@ -117,15 +161,35 @@ def test_parse_2025_ioniq5_electric_vehicle_status():
     assert status.ev_battery_level == 72
     assert status.charging_state == "charging"
     assert status.charging_plug == "connected"
-    assert status.charging_remaining_time == 95
     assert status.charging_detail == "fastCharging"
     assert status.auxiliary_battery_warning == "normal"
     assert status.electric_vehicle_battery_warning == "normal"
+    assert status.tire_pressure_warning == "normal"
+    assert status.lamp_wire_warning == "normal"
+    assert status.washer_fluid_warning == "normal"
+    assert status.brake_fluid_warning == "normal"
+    assert status.engine_oil_warning == "normal"
     assert "vehicleBattery" in status.available_capabilities
     assert status.supports_attribute("vehicleBattery", "batteryLevel") is True
-    assert status.supports_attribute("vehicleBattery", "chargingRemainTime") is True
     assert status.supports_attribute("vehicleBattery", "chargingDetail") is True
     assert status.supports_attribute("vehicleFuelLevel", "fuelLevel") is False
+
+
+def test_tire_pressure_warning_is_unknown_without_reported_wheel_states():
+    status = parse_vehicle_status(
+        {
+            "components": {
+                "main": {
+                    "vehicleWarning": {
+                        "tirePressureFrontLeft": {"value": None},
+                        "tirePressureFrontRight": {"value": None},
+                    }
+                }
+            }
+        }
+    )
+
+    assert status.tire_pressure_warning is None
 
 
 def test_parse_command_result_requires_accepted_status():
