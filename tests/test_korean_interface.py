@@ -124,8 +124,8 @@ def test_home_assistant_entity_categories_are_applied():
     select_source = (component / "select.py").read_text(encoding="utf-8")
     switch_source = (component / "switch.py").read_text(encoding="utf-8")
 
-    assert sensor_source.count("entity_category=EntityCategory.DIAGNOSTIC") == 2
-    assert button_source.count("entity_category=EntityCategory.DIAGNOSTIC") == 2
+    assert "_attr_entity_category = EntityCategory.DIAGNOSTIC" in sensor_source
+    assert "EntityCategory.DIAGNOSTIC" not in button_source
     assert number_source.count("entity_category=EntityCategory.CONFIG") == 2
     assert select_source.count("entity_category=EntityCategory.CONFIG") == 2
     assert switch_source.count("entity_category=EntityCategory.CONFIG") == 1

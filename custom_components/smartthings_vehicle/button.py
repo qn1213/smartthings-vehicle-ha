@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -23,13 +22,11 @@ BUTTONS = (
     SmartThingsVehicleButtonDescription(
         key="refresh",
         translation_key="refresh",
-        entity_category=EntityCategory.DIAGNOSTIC,
         press_fn=lambda coordinator: coordinator.async_refresh_vehicle(),
     ),
     SmartThingsVehicleButtonDescription(
         key="ping_vehicle",
         translation_key="ping_vehicle",
-        entity_category=EntityCategory.DIAGNOSTIC,
         press_fn=lambda coordinator: coordinator.async_ping_vehicle(),
     ),
 )

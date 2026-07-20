@@ -321,6 +321,7 @@ async def async_setup_entry(
 class SmartThingsVehicleSensor(CoordinatorEntity[SmartThingsVehicleCoordinator], SensorEntity):
     entity_description: SmartThingsVehicleSensorDescription
     _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
         self,
