@@ -28,13 +28,6 @@ class SmartThingsTokenInfo:
 class VehicleStatus:
     range_km: float | int | None = None
     odometer_km: float | int | None = None
-    vehicle_make: str | None = None
-    vehicle_model: str | None = None
-    vehicle_year: int | None = None
-    vehicle_trim: str | None = None
-    vehicle_color: str | None = None
-    vehicle_plate: str | None = None
-    vehicle_image: str | None = None
     engine_state: str | None = None
     hvac_state: str | None = None
     hvac_speed: int | None = None
@@ -351,13 +344,6 @@ def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
     return VehicleStatus(
         range_km=_nested_value(payload, "vehicleRange", "estimatedRemainingRange"),
         odometer_km=_nested_value(payload, "vehicleOdometer", "odometerReading"),
-        vehicle_make=_nested_value(payload, "vehicleInformation", "vehicleMake"),
-        vehicle_model=_nested_value(payload, "vehicleInformation", "vehicleModel"),
-        vehicle_year=_nested_value(payload, "vehicleInformation", "vehicleYear"),
-        vehicle_trim=_nested_value(payload, "vehicleInformation", "vehicleTrim"),
-        vehicle_color=_nested_value(payload, "vehicleInformation", "vehicleColor"),
-        vehicle_plate=_nested_value(payload, "vehicleInformation", "vehiclePlate"),
-        vehicle_image=_nested_value(payload, "vehicleInformation", "vehicleImage"),
         engine_state=_nested_value(payload, "vehicleEngine", "engineState"),
         hvac_state=_nested_value(payload, "vehicleHvac", "hvacState"),
         hvac_speed=_nested_value(payload, "vehicleHvac", "hvacSpeed"),

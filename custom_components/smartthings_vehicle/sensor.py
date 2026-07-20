@@ -8,6 +8,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfLength, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -30,17 +31,6 @@ def _status_value(attribute: str) -> Callable[[SmartThingsVehicleCoordinator], A
         return getattr(coordinator.data, attribute)
 
     return value
-
-
-def _vehicle_model_attributes(
-    coordinator: SmartThingsVehicleCoordinator,
-) -> dict[str, Any] | None:
-    if coordinator.data is None:
-        return None
-    attributes = {
-        "image_url": coordinator.data.vehicle_image,
-    }
-    return {key: value for key, value in attributes.items() if value is not None} or None
 
 
 def _is_sensor_supported(
@@ -75,49 +65,6 @@ SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
         value_fn=_status_value("odometer_km"),
         required_capability="vehicleOdometer",
         required_attribute="odometerReading",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_make",
-        translation_key="vehicle_make",
-        value_fn=_status_value("vehicle_make"),
-        required_capability="vehicleInformation",
-        required_attribute="vehicleMake",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_model",
-        translation_key="vehicle_model",
-        value_fn=_status_value("vehicle_model"),
-        attr_fn=_vehicle_model_attributes,
-        required_capability="vehicleInformation",
-        required_attribute="vehicleModel",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_year",
-        translation_key="vehicle_year",
-        value_fn=_status_value("vehicle_year"),
-        required_capability="vehicleInformation",
-        required_attribute="vehicleYear",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_trim",
-        translation_key="vehicle_trim",
-        value_fn=_status_value("vehicle_trim"),
-        required_capability="vehicleInformation",
-        required_attribute="vehicleTrim",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_color",
-        translation_key="vehicle_color",
-        value_fn=_status_value("vehicle_color"),
-        required_capability="vehicleInformation",
-        required_attribute="vehicleColor",
-    ),
-    SmartThingsVehicleSensorDescription(
-        key="vehicle_plate",
-        translation_key="vehicle_plate",
-        value_fn=_status_value("vehicle_plate"),
-        required_capability="vehicleInformation",
-        required_attribute="vehiclePlate",
     ),
     SmartThingsVehicleSensorDescription(
         key="engine_state",
@@ -343,6 +290,7 @@ SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
     SmartThingsVehicleSensorDescription(
         key="health",
         translation_key="health",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_status_value("health"),
         required_capability="healthCheck",
         required_attribute="DeviceWatch-DeviceStatus",
@@ -350,6 +298,7 @@ SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
     SmartThingsVehicleSensorDescription(
         key="command_state",
         translation_key="command_state",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda coordinator: coordinator.command_status.state,
         attr_fn=lambda coordinator: coordinator.command_status.as_attributes(),
     ),

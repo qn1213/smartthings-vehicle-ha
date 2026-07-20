@@ -79,13 +79,6 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
     assert status == VehicleStatus(
         range_km=412,
         odometer_km=12345.6,
-        vehicle_make="Hyundai",
-        vehicle_model="IONIQ 5",
-        vehicle_year=2025,
-        vehicle_trim="Prestige",
-        vehicle_color="Digital Teal",
-        vehicle_plate="12가3456",
-        vehicle_image="https://example.com/ioniq5.png",
         engine_state="off",
         hvac_state="off",
         hvac_speed=3,
@@ -114,6 +107,16 @@ def test_parse_vehicle_status_maps_smartthings_status_payload():
         engine_oil_warning="normal",
         health="online",
     )
+    assert not {
+        "vehicle_make",
+        "vehicle_model",
+        "vehicle_year",
+        "vehicle_trim",
+        "vehicle_color",
+        "vehicle_plate",
+        "vehicle_image",
+        "charging_remaining_time",
+    } & set(VehicleStatus.__dataclass_fields__)
 
 
 def test_parse_vehicle_status_tolerates_missing_capabilities():

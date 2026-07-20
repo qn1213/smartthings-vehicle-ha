@@ -389,14 +389,9 @@ class SmartThingsVehicleCoordinator(DataUpdateCoordinator[VehicleStatus]):
 
     @property
     def device_info(self) -> dict[str, Any]:
-        status = self.data
-        manufacturer = status.vehicle_make if status and status.vehicle_make else None
-        model = status.vehicle_model if status and status.vehicle_model else None
-        if model and status and status.vehicle_year:
-            model = f"{model} ({status.vehicle_year})"
         return {
             "identifiers": {(DOMAIN, self.client.device_id)},
             "name": self.config_entry.data.get(CONF_TITLE) or "스마트싱스 차량",
-            "manufacturer": manufacturer or "Hyundai Motor Group / SmartThings",
-            "model": model or "한국 SmartThings 차량",
+            "manufacturer": "Hyundai Motor Group / SmartThings",
+            "model": "한국 SmartThings 차량",
         }
