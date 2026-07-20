@@ -71,6 +71,27 @@
       "smart_key_battery": {
         "name": "스마트키 배터리"
       },
+      "ev_battery_level": {
+        "name": "고전압 배터리 잔량"
+      },
+      "charging_state": {
+        "name": "충전 상태"
+      },
+      "charging_detail": {
+        "name": "충전 방식"
+      },
+      "charging_plug": {
+        "name": "충전 커넥터 상태"
+      },
+      "charging_remaining_time": {
+        "name": "충전 남은 시간"
+      },
+      "auxiliary_battery_warning": {
+        "name": "보조 배터리 경고"
+      },
+      "electric_vehicle_battery_warning": {
+        "name": "고전압 배터리 경고"
+      },
       "health": {
         "name": "연결 상태"
       },

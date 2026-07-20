@@ -85,6 +85,47 @@ def test_parse_vehicle_status_tolerates_missing_capabilities():
     assert status.lock_state is None
     assert status.engine_state is None
     assert status.range_km is None
+    assert status.ev_battery_level is None
+    assert status.supports_attribute("vehicleBattery", "batteryLevel") is False
+
+
+def test_parse_2025_ioniq5_electric_vehicle_status():
+    payload = {
+        "components": {
+            "main": {
+                "vehicleRange": {
+                    "estimatedRemainingRange": {"value": 386, "unit": "km"}
+                },
+                "vehicleBattery": {
+                    "batteryLevel": {"value": 72, "unit": "%"},
+                    "chargingState": {"value": "charging"},
+                    "chargingPlug": {"value": "connected"},
+                    "chargingRemainTime": {"value": 95, "unit": "mins"},
+                    "chargingDetail": {"value": "fastCharging"},
+                },
+                "vehicleWarning": {
+                    "auxiliaryBattery": {"value": "normal"},
+                    "electricVehicleBattery": {"value": "normal"},
+                },
+            }
+        }
+    }
+
+    status = parse_vehicle_status(payload)
+
+    assert status.range_km == 386
+    assert status.ev_battery_level == 72
+    assert status.charging_state == "charging"
+    assert status.charging_plug == "connected"
+    assert status.charging_remaining_time == 95
+    assert status.charging_detail == "fastCharging"
+    assert status.auxiliary_battery_warning == "normal"
+    assert status.electric_vehicle_battery_warning == "normal"
+    assert "vehicleBattery" in status.available_capabilities
+    assert status.supports_attribute("vehicleBattery", "batteryLevel") is True
+    assert status.supports_attribute("vehicleBattery", "chargingRemainTime") is True
+    assert status.supports_attribute("vehicleBattery", "chargingDetail") is True
+    assert status.supports_attribute("vehicleFuelLevel", "fuelLevel") is False
 
 
 def test_parse_command_result_requires_accepted_status():

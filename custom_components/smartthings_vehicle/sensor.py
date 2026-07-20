@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfLength, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, UnitOfLength, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -19,6 +19,8 @@ from .coordinator import SmartThingsVehicleCoordinator
 class SmartThingsVehicleSensorDescription(SensorEntityDescription):
     value_fn: Callable[[SmartThingsVehicleCoordinator], Any]
     attr_fn: Callable[[SmartThingsVehicleCoordinator], dict[str, Any] | None] | None = None
+    required_capability: str | None = None
+    required_attribute: str | None = None
 
 
 def _status_value(attribute: str) -> Callable[[SmartThingsVehicleCoordinator], Any]:
@@ -28,6 +30,20 @@ def _status_value(attribute: str) -> Callable[[SmartThingsVehicleCoordinator], A
         return getattr(coordinator.data, attribute)
 
     return value
+
+
+def _is_sensor_supported(
+    coordinator: SmartThingsVehicleCoordinator,
+    description: SmartThingsVehicleSensorDescription,
+) -> bool:
+    if description.required_capability is None or description.required_attribute is None:
+        return True
+    if coordinator.data is None:
+        return False
+    return coordinator.data.supports_attribute(
+        description.required_capability,
+        description.required_attribute,
+    )
 
 
 SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
@@ -118,6 +134,59 @@ SENSORS: tuple[SmartThingsVehicleSensorDescription, ...] = (
         value_fn=_status_value("smart_key_battery"),
     ),
     SmartThingsVehicleSensorDescription(
+        key="ev_battery_level",
+        translation_key="ev_battery_level",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        value_fn=_status_value("ev_battery_level"),
+        required_capability="vehicleBattery",
+        required_attribute="batteryLevel",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="charging_state",
+        translation_key="charging_state",
+        value_fn=_status_value("charging_state"),
+        required_capability="vehicleBattery",
+        required_attribute="chargingState",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="charging_detail",
+        translation_key="charging_detail",
+        value_fn=_status_value("charging_detail"),
+        required_capability="vehicleBattery",
+        required_attribute="chargingDetail",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="charging_plug",
+        translation_key="charging_plug",
+        value_fn=_status_value("charging_plug"),
+        required_capability="vehicleBattery",
+        required_attribute="chargingPlug",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="charging_remaining_time",
+        translation_key="charging_remaining_time",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        device_class=SensorDeviceClass.DURATION,
+        value_fn=_status_value("charging_remaining_time"),
+        required_capability="vehicleBattery",
+        required_attribute="chargingRemainTime",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="auxiliary_battery_warning",
+        translation_key="auxiliary_battery_warning",
+        value_fn=_status_value("auxiliary_battery_warning"),
+        required_capability="vehicleWarning",
+        required_attribute="auxiliaryBattery",
+    ),
+    SmartThingsVehicleSensorDescription(
+        key="electric_vehicle_battery_warning",
+        translation_key="electric_vehicle_battery_warning",
+        value_fn=_status_value("electric_vehicle_battery_warning"),
+        required_capability="vehicleWarning",
+        required_attribute="electricVehicleBattery",
+    ),
+    SmartThingsVehicleSensorDescription(
         key="health",
         translation_key="health",
         value_fn=_status_value("health"),
@@ -138,7 +207,9 @@ async def async_setup_entry(
 ) -> None:
     coordinator: SmartThingsVehicleCoordinator = entry.runtime_data
     async_add_entities(
-        SmartThingsVehicleSensor(coordinator, description) for description in SENSORS
+        SmartThingsVehicleSensor(coordinator, description)
+        for description in SENSORS
+        if _is_sensor_supported(coordinator, description)
     )
 
 

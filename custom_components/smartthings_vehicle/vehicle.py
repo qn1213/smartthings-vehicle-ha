@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from time import monotonic
 from typing import Any
+from urllib.parse import quote
 
 API_BASE_URL = "https://api.smartthings.com/v1"
 
@@ -42,14 +43,37 @@ class VehicleStatus:
     rear_right_window: str | None = None
     fuel_warning: str | None = None
     smart_key_battery: str | None = None
+    ev_battery_level: float | int | None = None
+    charging_state: str | None = None
+    charging_plug: str | None = None
+    charging_remaining_time: float | int | None = None
+    charging_detail: str | None = None
+    auxiliary_battery_warning: str | None = None
+    electric_vehicle_battery_warning: str | None = None
     health: str | None = None
+    available_capabilities: frozenset[str] = field(
+        default_factory=frozenset,
+        compare=False,
+        repr=False,
+    )
+    available_attributes: frozenset[str] = field(
+        default_factory=frozenset,
+        compare=False,
+        repr=False,
+    )
 
     def as_dict(self) -> dict[str, Any]:
         return {
-            field: getattr(self, field)
-            for field in self.__dataclass_fields__
-            if getattr(self, field) is not None
+            field_name: getattr(self, field_name)
+            for field_name in self.__dataclass_fields__
+            if field_name not in {"available_capabilities", "available_attributes"}
+            and getattr(self, field_name) is not None
         }
+
+    def supports_attribute(self, capability: str, attribute: str) -> bool:
+        """Return whether SmartThings reported an attribute for this vehicle."""
+
+        return f"{capability}.{attribute}" in self.available_attributes
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,15 +164,48 @@ class VehicleDevice:
         }
 
 
+def _main_component(payload: dict[str, Any]) -> dict[str, Any]:
+    components = payload.get("components")
+    if not isinstance(components, dict):
+        return {}
+    main = components.get("main")
+    return main if isinstance(main, dict) else {}
+
+
 def _nested_value(payload: dict[str, Any], capability: str, attribute: str) -> Any:
-    main = payload.get("components", {}).get("main", {})
-    return main.get(capability, {}).get(attribute, {}).get("value")
+    main = _main_component(payload)
+    capability_status = main.get(capability)
+    if not isinstance(capability_status, dict):
+        return None
+    attribute_status = capability_status.get(attribute)
+    if not isinstance(attribute_status, dict):
+        return None
+    return attribute_status.get("value")
 
 
 def _nested_unit(payload: dict[str, Any], capability: str, attribute: str) -> str | None:
-    main = payload.get("components", {}).get("main", {})
-    unit = main.get(capability, {}).get(attribute, {}).get("unit")
+    main = _main_component(payload)
+    capability_status = main.get(capability)
+    if not isinstance(capability_status, dict):
+        return None
+    attribute_status = capability_status.get(attribute)
+    if not isinstance(attribute_status, dict):
+        return None
+    unit = attribute_status.get("unit")
     return unit if isinstance(unit, str) else None
+
+
+def _available_status_attributes(main: dict[str, Any]) -> frozenset[str]:
+    attributes: set[str] = set()
+    for capability, capability_status in main.items():
+        if not isinstance(capability, str) or not isinstance(capability_status, dict):
+            continue
+        attributes.update(
+            f"{capability}.{attribute}"
+            for attribute in capability_status
+            if isinstance(attribute, str)
+        )
+    return frozenset(attributes)
 
 
 def _coerce_expires_at(value: Any) -> float | None:
@@ -240,6 +297,7 @@ def discover_vehicle_devices(payload: dict[str, Any]) -> list[dict[str, str | No
 def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
     """Map SmartThings `/status` JSON into a stable vehicle status dataclass."""
 
+    main = _main_component(payload)
     return VehicleStatus(
         range_km=_nested_value(payload, "vehicleRange", "estimatedRemainingRange"),
         odometer_km=_nested_value(payload, "vehicleOdometer", "odometerReading"),
@@ -258,7 +316,28 @@ def parse_vehicle_status(payload: dict[str, Any]) -> VehicleStatus:
         rear_right_window=_nested_value(payload, "vehicleWindowState", "rearRightWindow"),
         fuel_warning=_nested_value(payload, "vehicleWarning", "fuel"),
         smart_key_battery=_nested_value(payload, "vehicleWarning", "smartKeyBattery"),
+        ev_battery_level=_nested_value(payload, "vehicleBattery", "batteryLevel"),
+        charging_state=_nested_value(payload, "vehicleBattery", "chargingState"),
+        charging_plug=_nested_value(payload, "vehicleBattery", "chargingPlug"),
+        charging_remaining_time=_nested_value(
+            payload,
+            "vehicleBattery",
+            "chargingRemainTime",
+        ),
+        charging_detail=_nested_value(payload, "vehicleBattery", "chargingDetail"),
+        auxiliary_battery_warning=_nested_value(
+            payload,
+            "vehicleWarning",
+            "auxiliaryBattery",
+        ),
+        electric_vehicle_battery_warning=_nested_value(
+            payload,
+            "vehicleWarning",
+            "electricVehicleBattery",
+        ),
         health=_nested_value(payload, "healthCheck", "DeviceWatch-DeviceStatus"),
+        available_capabilities=frozenset(main),
+        available_attributes=_available_status_attributes(main),
     )
 
 
@@ -337,9 +416,23 @@ class SmartThingsVehicleClient:
     async def async_get_device(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}")
 
+    async def async_get_raw_status(self) -> dict[str, Any]:
+        return await self._request("GET", f"/devices/{self.device_id}/status")
+
     async def async_get_status(self) -> VehicleStatus:
-        payload = await self._request("GET", f"/devices/{self.device_id}/status")
+        payload = await self.async_get_raw_status()
         return parse_vehicle_status(payload)
+
+    async def async_get_capability_definition(
+        self,
+        capability_id: str,
+        version: int = 1,
+    ) -> dict[str, Any]:
+        encoded_capability_id = quote(capability_id, safe="")
+        return await self._request(
+            "GET",
+            f"/capabilities/{encoded_capability_id}/{version}",
+        )
 
     async def async_refresh(self) -> VehicleCommandResult:
         return await self.async_send_command("refresh", "refresh")

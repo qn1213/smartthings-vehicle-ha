@@ -38,6 +38,17 @@ def test_home_assistant_visible_strings_are_korean_first():
     assert strings["config"]["step"]["user"]["title"] == "스마트싱스 차량"
     assert strings["entity"]["sensor"]["range_km"]["name"] == "주행 가능 거리"
     assert strings["entity"]["sensor"]["command_state"]["name"] == "명령 상태"
+    assert strings["entity"]["sensor"]["ev_battery_level"]["name"] == (
+        "고전압 배터리 잔량"
+    )
+    assert strings["entity"]["sensor"]["charging_state"]["name"] == "충전 상태"
+    assert strings["entity"]["sensor"]["charging_detail"]["name"] == "충전 방식"
+    assert strings["entity"]["sensor"]["charging_plug"]["name"] == (
+        "충전 커넥터 상태"
+    )
+    assert strings["entity"]["sensor"]["charging_remaining_time"]["name"] == (
+        "충전 남은 시간"
+    )
     assert set(strings["entity"]["button"]) == {"refresh", "ping_vehicle"}
     assert strings["entity"]["lock"]["door_lock"]["name"] == "차량 잠금"
     assert set(strings["entity"]["switch"]) == {"hvac", "hvac_defog"}
